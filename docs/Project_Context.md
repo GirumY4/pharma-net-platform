@@ -295,25 +295,39 @@ backend foundations → authentication → medicine module → order module (wit
 pharma-net-platform/
 ├── README.md
 ├── docs/
+│   ├── Project_Context.md
 │   ├── SRS.md
 │   ├── SDS.md
-│   ├── API-spec.yaml
-│   └── schema.md
+│   ├── API_Documentation.md
+│   └── Database_Schema.md
 ├── backend/
 │   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   └── app.js
+│   │   ├── config/                     # Environment variables, DB connection
+│   │   ├── middlewares/                # Global middlewares
+│   │   │   ├── auth.middleware.ts      # JWT Validation
+│   │   │   ├── rbac.middleware.ts      # Role-Based Access Control
+│   │   │   └── error.middleware.ts     # Global Error Handling
+│   │   ├── modules/                    # 🌟 CORE BACKEND FEATURES (Matches frontend)
+│   │   │   ├── auth/
+│   │   │   ├── users/                  # User schema, user CRUD (Admin only)
+│   │   │   ├── inventory/              # Medicine schema, stock adjustment logic, GRN/GIN
+│   │   │   │   ├── inventory.controller.ts
+│   │   │   │   ├── inventory.routes.ts
+│   │   │   │   ├── inventory.service.ts  # Atomic updates ($inc) happen here
+│   │   │   │   └── medicine.model.ts     # Mongoose Schema
+│   │   │   ├── orders/                 # Order schema, Stock Validation, Status Lifecycle
+│   │   │   ├── payments/               # Payment schema, Financial histories
+│   │   │   ├── reports/                # Complex MongoDB Aggregations
+│   │   │   └── auditLogs/              # Immutable AuditLog schema and logic
+│   │   ├── utils/                      # Helpers (ALCOA+ log generators, bcrypt hashing)
+│   │   ├── app.ts                      # Express app initialization & route assembly
+│   │   └── server.ts                   # Entry point (App.listen)
+│   ├── .env
 │   ├── package.json
-│   └── .env.example
-├── web/
-│   ├── src/
-│   └── package.json
-└── database/
-    └── seeds/   (JS seed scripts)
+│   └── tsconfig.json
+├── frontend/
+   ├── src/
+   └── package.json
 ```
 
 ### Branch Strategy
