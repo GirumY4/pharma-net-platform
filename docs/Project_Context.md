@@ -264,11 +264,11 @@ Since this project simulates a professional pharmaceutical system, the backend m
 
 - [x] Project title finalized
 - [x] GitHub repository created: `pharma-net-platform`
-- [x] Technology stack confirmed (React + Node + MongoDB)
+- [x] Technology stack confirmed (React + Node(Express.js) + MongoDB)
 
 ### Next / In Progress
 
-- [ ] Finalize folder structure (`backend/`, `web/`, `docs/`)
+- [ ] Finalize folder structure (`backend/`, `frontend/`, `docs/`)
 - [ ] Backend setup and MongoDB connection (Atlas)
 - [ ] Implement User model and authentication (JWT + bcrypt)
 - [ ] Role middleware and RBAC enforcement
@@ -326,8 +326,47 @@ pharma-net-platform/
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/
-   ├── src/
-   └── package.json
+│   ├ ── public/
+│   ├── src/
+│   │   ├── app/                        # App-level initialization
+│   │   ├── App.tsx
+│   │   ├── AppThemeProvider.tsx
+│   │   └── router.tsx              # Global route composition
+│   ├── assets/                     # Static assets
+│   │   ├── fonts/
+│   │   ├── icons/
+│   │   └── images/
+│   ├── components/                 # GLOBAL / SHARED UI Components ONLY
+│   │   ├── common/                 # Dumb components (Buttons, Modals, Inputs)
+│   │   ├── layout/                 # Layouts (Sidebar, Header, PageWrappers)
+│   │   └── ui/                     # Material UI customized wrappers
+│   ├── contexts/                   # Global state (e.g., GlobalAuthContext, ThemeContext)
+│   ├── features/                   # 🌟 CORE DOMAIN LOGIC (Feature-based)
+│   │   ├── admin/                  # System Admin & User Governance
+│   │   ├── audit/                  # ALCOA+ 21 CFR Part 11 Audit Log Viewer
+│   │   ├── auth/                   # Identity & Access Management (Login, JWT)
+│   │   ├── dashboard/              # Command Center (KPIs, Alerts)
+│   │   ├── inventory/              # Medicine CRUD, GRN/GIN, Batch & Expiry Tracking
+│   │   │   ├── components/         # Specific UI (e.g., StockAdjustmentModal.tsx)
+│   │   │   ├── hooks/              # Specific logic (e.g., useInventorySearch.ts)
+│   │   │   ├── pages/              # Routed pages (e.g., InventoryGridPage.tsx)
+│   │   │   ├── services/           # API calls (e.g., inventoryApi.ts)
+│   │   │   ├── index.ts            # Public API (Exports what other features can use)
+│   │   │   └── types.ts            # Interfaces (e.g., IMedicine, IBatch)
+│   │   ├── orders/                 # Pending Orders, Approval Workflows, History
+│   │   ├── payments/               # Financial Tracking & Records
+│   │   └── reports/                # Sales, Inventory Valuations, Expiration Forecasts
+│   ├── hooks/                      # Global hooks (e.g., useWindowSize, useDebounce)
+│   ├── routes/                     # Route guards (e.g., ProtectedRoute, RoleRoute)
+│   ├── services/                   # Global API config (Axios instances, Interceptors)
+│   ├── styles/                     # Global CSS and structural styles
+│   ├── types/                      # Global TypeScript definitions
+│   ├── utils/                      # Global helpers (date formatters, token parsers)
+│   ├── main.tsx                    # React Entry point
+│   └── vite-env.d.ts
+├── eslint.config.js
+├── index.html
+└── package.json
 ```
 
 ### Branch Strategy
