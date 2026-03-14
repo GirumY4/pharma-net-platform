@@ -153,7 +153,7 @@ Register a new user account. In production, `pharmacy` and `warehouse_manager` a
 Authenticate a user and receive a signed JWT.
 
 **Access:** 🔓 Public  
-**FR:** FR-1.3
+**FR:** FR-1.3, FR-1.5
 
 #### Request Body
 
@@ -322,7 +322,7 @@ Returns the calling user's document (excluding `passwordHash`).
 Retrieve all medicines. Excludes soft-deleted records by default.
 
 **Access:** 🟢 `pharmacy` | 🟡 `warehouse_manager` | 🔴 `admin`  
-**FR:** FR-2.6
+**FR:** FR-2.5, FR-2.6
 
 #### Query Parameters
 
@@ -940,7 +940,7 @@ All report endpoints require at minimum `warehouse_manager` role. They are read-
 Generate a full inventory report including batch details and stock valuations.
 
 **Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
-**FR:** FR-5.1
+**FR:** FR-2.5, FR-5.1
 
 #### Query Parameters
 
@@ -1159,7 +1159,7 @@ All error responses follow a consistent envelope:
 | `/api/auth/register` | POST | FR-1.1, FR-1.2 |
 | `/api/auth/login` | POST | FR-1.3, FR-1.5 |
 | `/api/users` | GET / PATCH / DELETE | FR-1.4, NFR-4.2, NFR-4.3 |
-| `/api/medicines` | GET | FR-2.6, NFR-1.4 |
+| `/api/medicines` | GET | FR-2.5, FR-2.6, NFR-1.4 |
 | `/api/medicines` | POST | FR-2.1, FR-2.2, FR-2.3 |
 | `/api/medicines/:id` | PATCH | FR-2.1 |
 | `/api/medicines/:id` | DELETE | NFR-4.2 |
@@ -1168,10 +1168,10 @@ All error responses follow a consistent envelope:
 | `/api/orders` | GET | FR-3.5 |
 | `/api/orders` | POST | FR-3.1, FR-3.2 |
 | `/api/orders/:id` | GET | FR-3.5 |
-| `/api/orders/:id/status` | PATCH | FR-3.3, FR-3.4, NFR-2.4 |
+| `/api/orders/:id/status` | PATCH | FR-3.3, FR-3.4, NFR-2.4, NFR-4.3 |
 | `/api/payments` | GET | FR-4.3 |
 | `/api/payments` | POST | FR-4.1, FR-4.2, FR-4.4 |
-| `/api/reports/inventory` | GET | FR-5.1 |
+| `/api/reports/inventory` | GET | FR-2.5, FR-5.1 |
 | `/api/reports/sales` | GET | FR-5.2 |
 | `/api/reports/expiring` | GET | FR-5.3 |
 | `/api/logs` | GET | FR-5.4, NFR-4.1 |

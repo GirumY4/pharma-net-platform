@@ -4,32 +4,31 @@
  * middleware as an error handler.  Must be the LAST app.use() call.
  */
 
+// src/middlewares/error.middleware.ts
 import type { Request, Response, NextFunction } from 'express';
 
 interface AppError extends Error {
-    statusCode?: number;
-    status?: number;
+  statusCode?: number;
+  status?: number;
 }
 
-export function errorHandler(
-    err: AppError,
-    _req: Request,
-    res: Response,
-    next: NextFunction
-) {
-    if (res.headersSent) {
-        return next(err);
-    }
+export const errorHandler = (
+  err: AppError,
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  if (res.headersSent) return next(err);
 
-    const statusCode = err.statusCode ?? err.status ?? 500;
+  const statusCode = err.statusCode ?? err.status ?? 500;
 
-    // Don't leak stack traces to clients in production
-    const isDev = process.env.NODE_ENV === 'development';
-
-    res.status(statusCode).json({
-        success: false,
-        status: statusCode,
-        message: err.message || 'Internal Server Error',
-        ...(isDev && { stack: err.stack }),
-    });
-}
+  res.status(statusCode).json({
+    success: false,
+    status: statusCode,
+    error: {
+      code: statusCode === 500 ? 'INTERNAL_SERVER_ERROR' : err.name || 'ERROR',
+      message: err.message || 'Internal Server Error',
+    },
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+};
