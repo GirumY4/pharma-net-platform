@@ -1,0 +1,24 @@
+﻿src/modules/auditLogs/auditLogs.model.ts(31,73): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(this: Query<any, any, {}, unknown, "find", Record<string, never>>, next: CallbackWithoutResultAndOptionalError) => void' is not assignable to parameter of type 'PreMiddlewareFunction<Query<any, any, {}, unknown, "find", Record<string, never>>>'.
+      Types of parameters 'next' and 'opts' are incompatible.
+        Type 'Record<string, any> | undefined' is not assignable to type 'CallbackWithoutResultAndOptionalError'.
+          Type 'undefined' is not assignable to type 'CallbackWithoutResultAndOptionalError'.
+src/modules/auditLogs/auditLogs.model.ts(32,73): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(this: Query<any, any, {}, unknown, "find", Record<string, never>>, next: CallbackWithoutResultAndOptionalError) => void' is not assignable to parameter of type 'PreMiddlewareFunction<Query<any, any, {}, unknown, "find", Record<string, never>>>'.
+      Types of parameters 'next' and 'opts' are incompatible.
+        Type 'Record<string, any> | undefined' is not assignable to type 'CallbackWithoutResultAndOptionalError'.
+          Type 'undefined' is not assignable to type 'CallbackWithoutResultAndOptionalError'.
+src/modules/auth/auth.controller.ts(5,10): error TS2724: '"../users/user.model.js"' has no exported member named 'User'. Did you mean 'IUser'?
+src/utils/auditLogger.ts(2,22): error TS1149: File name 'C:/Users/Hp/pharma-net-platform/backend/src/modules/auditLogs/auditlogs.model.ts' differs from already included file name 'C:/Users/Hp/pharma-net-platform/backend/src/modules/auditLogs/auditLogs.model.ts' only in casing.
+  The file is in the program because:
+    Matched by include pattern 'src/**/*' in 'C:/Users/Hp/pharma-net-platform/backend/tsconfig.json'
+    Imported via '../modules/auditLogs/auditlogs.model.js' from file 'C:/Users/Hp/pharma-net-platform/backend/src/utils/auditLogger.ts'
+  File is ECMAScript module because 'C:/Users/Hp/pharma-net-platform/backend/package.json' has field "type" with value "module"
+src/utils/auditLogger.ts(17,31): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '{ userId: string; actionType: string; resource: string; resourceId: string; before: any; after: any; ipAddress: string | undefined; userAgent: string | undefined; timestamp: Date; }' is not assignable to parameter of type '{ userId?: ObjectId | { readonly _bsontype?: StringQueryTypeCasting; id?: { [x: number]: number | undefined; readonly BYTES_PER_ELEMENT?: number; ... 37 more ...; readonly [Symbol.toStringTag]?: "Uint8Array"; } | { ...; }; ... 7 more ...; readonly [bsonType]?: StringQueryTypeCasting; }; ... 65 more ...; validateSync...' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'ipAddress' are incompatible.
+        Type 'string | undefined' is not assignable to type 'StringQueryTypeCasting'.
+          Type 'undefined' is not assignable to type 'StringQueryTypeCasting'.

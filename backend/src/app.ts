@@ -9,7 +9,7 @@ import { errorHandler } from './middlewares/error.middleware.js';
 import { notFoundHandler } from './middlewares/notFound.middleware.js';
 
 // Import routes (create these folders/files later)
-// import authRoutes from './modules/auth/auth.routes.js';
+import authRoutes from './modules/auth/auth.routes.js';
 // import userRoutes from './modules/users/users.routes.js';
 // import medicineRoutes from './modules/inventory/medicine.routes.js';
 // ... import other route groups as you implement them
@@ -62,7 +62,7 @@ app.get('/health', (_req: Request, res: Response) => {
     });
 });
 
-// app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 // app.use('/api/users', userRoutes);
 // app.use('/api/inventory', inventoryRoutes);
 // app.use('/api/orders', orderRoutes);

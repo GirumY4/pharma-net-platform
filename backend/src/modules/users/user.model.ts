@@ -41,4 +41,4 @@ const userSchema = new Schema<IUser>(
 // We don't hash the password in a pre-save hook here to keep things explicit 
 // and avoid issues with Mongoose update operations later. We will hash it in the controller.
 
-export const User = mongoose.model<IUser>('User', userSchema);
+export default mongoose.model<IUser>('User', userSchema);
