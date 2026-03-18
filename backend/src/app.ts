@@ -10,8 +10,8 @@ import { notFoundHandler } from './middlewares/notFound.middleware.js';
 
 // Import routes (create these folders/files later)
 import authRoutes from './modules/auth/auth.routes.js';
-// import userRoutes from './modules/users/users.routes.js';
-// import medicineRoutes from './modules/inventory/medicine.routes.js';
+import userRoutes from './modules/users/users.routes.js';
+import medicineRoutes from './modules/inventory/medicine.routes.js';
 // ... import other route groups as you implement them
 
 dotenv.config();
@@ -63,8 +63,8 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 app.use('/api/auth', authRoutes);
-// app.use('/api/users', userRoutes);
-// app.use('/api/inventory', inventoryRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/medicines', medicineRoutes);
 // app.use('/api/orders', orderRoutes);
 // app.use('/api/payments', paymentRoutes);
 // app.use('/api/reports', reportRoutes);

@@ -16,25 +16,25 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true },
-    email: { 
-      type: String, 
-      required: true, 
-      unique: true, 
-      lowercase: true, 
-      trim: true 
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true
     },
     passwordHash: { type: String, required: true },
-    role: { 
-      type: String, 
-      enum: ['admin', 'warehouse_manager', 'pharmacy'], 
-      required: true 
+    role: {
+      type: String,
+      enum: ['admin', 'warehouse_manager', 'pharmacy'],
+      required: true
     },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
   },
-  { 
-    timestamps: true 
+  {
+    timestamps: true
   }
 );
 

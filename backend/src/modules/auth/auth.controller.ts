@@ -2,7 +2,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt, { type SignOptions } from 'jsonwebtoken';
-import { User } from '../users/user.model.js';
+import User from '../users/user.model.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
