@@ -2,15 +2,15 @@
 
 | Field       | Details                              |
 |-------------|--------------------------------------|
-| **Version** | 1.0                                  |
-| **Date**    | 2026-02-26                           |
+| **Version** | 2.0                                  |
+| **Date**    | 2026-03-31                           |
 | **Authors** | Intern Development Team (Web & Backend) |
 | **Base URL**| `https://<host>/api`                 |
 | **Protocol**| HTTPS / TLS 1.2+                     |
 | **Format**  | JSON (`Content-Type: application/json`) |
 
-> **Alignment:** This documentation is derived from the SRS (v1.0), SDS, Database_Schema.md, and Project_Context.md.  
-> All business logic, stock validation, and data integrity (ALCOA+) are enforced at the API level.
+> **Alignment:** This documentation is derived from the SRS (v2.0), SDS, Database_Schema.md, and Project_Context.md.  
+> All business logic, multi-tenant isolation, stock validation, and data integrity (ALCOA+) are enforced at the API level. Tenant scoping is handled via `pharmacyId` extracted from the JWT — never from client input.
 
 ---
 
@@ -42,7 +42,7 @@ All endpoints are prefixed with `/api`. In development, the host is typically `l
 
 ### 1.2 Authentication
 
-Every endpoint **except** `POST /api/auth/register` and `POST /api/auth/login` requires a valid JWT passed in the `Authorization` header:
+Every endpoint **except** `POST /api/auth/register`, `POST /api/auth/login`, and `GET /api/medicines/marketplace` requires a valid JWT passed in the `Authorization` header:
 
 ```
 Authorization: Bearer <token>
@@ -57,16 +57,20 @@ Three roles exist. The table below shows the shorthand used throughout this docu
 | Role Symbol | Role Value in JWT | Description |
 |-------------|-------------------|-------------|
 | 🔓 Public | — | No token required. |
-| 🟢 `pharmacy` | `pharmacy` | Mobile API consumer; can browse inventory and manage own orders. |
-| 🟡 `warehouse_manager` | `warehouse_manager` | Manages inventory, approves orders, records payments. |
-| 🔴 `admin` | `admin` | Full access; manages users and sees all audit logs. |
+| 🟢 `public_user` | `public_user` | Consumer/Patient; searches the global marketplace, places orders, tracks order status. |
+| 🟡 `pharmacy_manager` | `pharmacy_manager` | SaaS tenant operator; manages local inventory, fulfills incoming orders, records payments. **All operations scoped by `pharmacyId` from JWT.** |
+| 🔴 `admin` | `admin` | Platform governance; manages tenant accounts, views cross-tenant audit logs, monitors platform health. |
 
-### 1.4 Date Format
+### 1.4 Multi-Tenant Scoping
+
+For `pharmacy_manager` users, the JWT payload includes a `pharmacyId` field. The API middleware automatically extracts this value and injects it into all downstream database queries. The `pharmacyId` is **never** accepted from the client request body — preventing tenant-hopping attacks. All tenant-scoped endpoints (medicines, inventory transactions, orders, payments, reports) are automatically filtered by this value.
+
+### 1.5 Date Format
 
 All dates use **ISO 8601** format: `YYYY-MM-DDTHH:mm:ssZ`  
 All timestamps are **server-generated** — never accepted from the client body.
 
-### 1.5 Pagination
+### 1.6 Pagination
 
 List endpoints that may return large datasets support cursor-based pagination via query parameters:
 
@@ -89,7 +93,7 @@ Paginated responses include a `pagination` object:
 }
 ```
 
-### 1.6 Soft Delete Behaviour
+### 1.7 Soft Delete Behaviour
 
 Records marked `isDeleted: true` are **excluded from all default list/get responses**. To include them, pass `?includeDeleted=true` (admin only).
 
@@ -99,7 +103,7 @@ Records marked `isDeleted: true` are **excluded from all default list/get respon
 
 ### `POST /api/auth/register`
 
-Register a new user account. In production, `pharmacy` and `warehouse_manager` accounts are created by an admin. This endpoint is open for initial setup.
+Register a new user account. In production, `pharmacy_manager` accounts are created by an admin (tenant onboarding). `public_user` accounts are self-registered via the mobile app. This endpoint is open for initial setup.
 
 **Access:** 🔓 Public  
 **FR:** FR-1.1, FR-1.2
@@ -108,10 +112,14 @@ Register a new user account. In production, `pharmacy` and `warehouse_manager` a
 
 ```json
 {
-  "name": "Abebe Girma",
-  "email": "abebe.girma@pharma.com",
+  "name": "Dr. Abebe Pharmacy",
+  "email": "abebe@pharma.com",
   "password": "SecurePass123!",
-  "role": "warehouse_manager"
+  "role": "pharmacy_manager",
+  "phoneNumber": "+251911234567",
+  "address": "Bole, Addis Ababa",
+  "city": "Addis Ababa",
+  "location": { "lat": 9.0054, "lng": 38.7636 }
 }
 ```
 
@@ -120,7 +128,11 @@ Register a new user account. In production, `pharmacy` and `warehouse_manager` a
 | `name` | String | ✅ | 2–100 chars |
 | `email` | String | ✅ | Valid email; must be unique |
 | `password` | String | ✅ | Min 8 chars |
-| `role` | String | ✅ | `admin` / `warehouse_manager` / `pharmacy` |
+| `role` | String | ✅ | `admin` / `pharmacy_manager` / `public_user` |
+| `phoneNumber` | String | ✅ for `pharmacy_manager`, recommended for `public_user` | Contact phone number. Displayed in marketplace results for pharmacies; used for delivery coordination for patients. |
+| `address` | String | ✅ for `pharmacy_manager`, recommended for `public_user` | Human-readable location (e.g., `"Bole, Addis Ababa"`). Shown in marketplace results for pharmacies; used as default delivery address for patients. |
+| `city` | String | ✅ for `pharmacy_manager`, recommended for `public_user` | City name for geographic filtering. |
+| `location` | Object | ❌ | `{ lat: Number, lng: Number }`. GPS coordinates for Google Maps integration on the mobile app. |
 
 #### Response `201 Created`
 
@@ -130,11 +142,15 @@ Register a new user account. In production, `pharmacy` and `warehouse_manager` a
   "message": "User registered successfully.",
   "data": {
     "_id": "64a1f2b3c4d5e6f7a8b9c0d1",
-    "name": "Abebe Girma",
-    "email": "abebe.girma@pharma.com",
-    "role": "warehouse_manager",
+    "name": "Dr. Abebe Pharmacy",
+    "email": "abebe@pharma.com",
+    "role": "pharmacy_manager",
+    "phoneNumber": "+251911234567",
+    "address": "Bole, Addis Ababa",
+    "city": "Addis Ababa",
+    "location": { "lat": 9.0054, "lng": 38.7636 },
     "isActive": true,
-    "createdAt": "2026-02-26T12:00:00Z"
+    "createdAt": "2026-03-31T12:00:00Z"
   }
 }
 ```
@@ -150,16 +166,16 @@ Register a new user account. In production, `pharmacy` and `warehouse_manager` a
 
 ### `POST /api/auth/login`
 
-Authenticate a user and receive a signed JWT.
+Authenticate a user and receive a signed JWT. For `pharmacy_manager` users, the JWT includes their `pharmacyId` for automatic tenant scoping.
 
 **Access:** 🔓 Public  
-**FR:** FR-1.3, FR-1.5
+**FR:** FR-1.3, FR-1.5, FR-1.6
 
 #### Request Body
 
 ```json
 {
-  "email": "abebe.girma@pharma.com",
+  "email": "abebe@pharma.com",
   "password": "SecurePass123!"
 }
 ```
@@ -175,14 +191,14 @@ Authenticate a user and receive a signed JWT.
     "expiresIn": "8h",
     "user": {
       "_id": "64a1f2b3c4d5e6f7a8b9c0d1",
-      "name": "Abebe Girma",
-      "role": "warehouse_manager"
+      "name": "Dr. Abebe Pharmacy",
+      "role": "pharmacy_manager"
     }
   }
 }
 ```
 
-> **Token Payload:** `{ userId, role, iat, exp }`. The `exp` is set to 8 hours from issue time, configurable via `JWT_EXPIRATION` env var (FR-1.5).
+> **Token Payload:** `{ userId, role, pharmacyId, iat, exp }`. For `pharmacy_manager` users, `pharmacyId` equals their `userId` (the user's `_id` doubles as the tenant identity). The `exp` is set to 8 hours from issue time, configurable via `JWT_EXPIRATION` env var (FR-1.5).
 
 #### Error Responses
 
@@ -196,11 +212,11 @@ Authenticate a user and receive a signed JWT.
 
 ## 3. Users (Admin)
 
-All user management endpoints are restricted to the `admin` role.
+All user management endpoints are restricted to the `admin` role. Admins create and manage pharmacy tenant accounts (onboarding/offboarding).
 
 ### `GET /api/users`
 
-Retrieve a paginated list of all users.
+Retrieve a paginated list of all users across the platform.
 
 **Access:** 🔴 `admin`  
 **FR:** FR-1.4
@@ -209,7 +225,7 @@ Retrieve a paginated list of all users.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `role` | String | Filter by role (`admin`, `warehouse_manager`, `pharmacy`). |
+| `role` | String | Filter by role (`admin`, `pharmacy_manager`, `public_user`). |
 | `isActive` | Boolean | Filter by active status. |
 | `page` | Integer | Page number. |
 | `limit` | Integer | Results per page. |
@@ -223,11 +239,14 @@ Retrieve a paginated list of all users.
   "data": [
     {
       "_id": "64a1f2b3c4d5e6f7a8b9c0d1",
-      "name": "Abebe Girma",
-      "email": "abebe.girma@pharma.com",
-      "role": "warehouse_manager",
+      "name": "Dr. Abebe Pharmacy",
+      "email": "abebe@pharma.com",
+      "role": "pharmacy_manager",
+      "phoneNumber": "+251911234567",
+      "address": "Bole, Addis Ababa",
+      "city": "Addis Ababa",
       "isActive": true,
-      "createdAt": "2026-02-26T12:00:00Z"
+      "createdAt": "2026-03-31T12:00:00Z"
     }
   ],
   "pagination": { "total": 12, "page": 1, "limit": 20, "totalPages": 1 }
@@ -249,13 +268,17 @@ Retrieve a single user by ID.
   "success": true,
   "data": {
     "_id": "64a1f2b3c4d5e6f7a8b9c0d1",
-    "name": "Abebe Girma",
-    "email": "abebe.girma@pharma.com",
-    "role": "warehouse_manager",
+    "name": "Dr. Abebe Pharmacy",
+    "email": "abebe@pharma.com",
+    "role": "pharmacy_manager",
+    "phoneNumber": "+251911234567",
+    "address": "Bole, Addis Ababa",
+    "city": "Addis Ababa",
+    "location": { "lat": 9.0054, "lng": 38.7636 },
     "isActive": true,
     "isDeleted": false,
-    "createdAt": "2026-02-26T12:00:00Z",
-    "updatedAt": "2026-02-26T12:00:00Z"
+    "createdAt": "2026-03-31T12:00:00Z",
+    "updatedAt": "2026-03-31T12:00:00Z"
   }
 }
 ```
@@ -264,7 +287,7 @@ Retrieve a single user by ID.
 
 ### `PATCH /api/users/:id`
 
-Update a user's name, role, or active status. Cannot change `email` or `passwordHash` through this endpoint.
+Update a user's name, role, or active status. Cannot change `email` or `passwordHash` through this endpoint. Used by admins to activate/deactivate pharmacy tenant accounts.
 
 **Access:** 🔴 `admin`  
 **FR:** FR-1.4
@@ -273,8 +296,8 @@ Update a user's name, role, or active status. Cannot change `email` or `password
 
 ```json
 {
-  "name": "Abebe G. Bekele",
-  "role": "admin",
+  "name": "Dr. Abebe G. Pharmacy",
+  "role": "pharmacy_manager",
   "isActive": false
 }
 ```
@@ -287,7 +310,7 @@ Returns the updated user object.
 
 ### `DELETE /api/users/:id`
 
-**Soft-delete** a user account. Sets `isDeleted: true` and `deletedAt` to server timestamp. The account cannot log in after this.
+**Soft-delete** a user account. Sets `isDeleted: true` and `deletedAt` to server timestamp. The account cannot log in after this. For pharmacy tenants, deactivation effectively disables the entire tenant — their medicines remain in the database but are excluded from marketplace search.
 
 **Access:** 🔴 `admin`  
 **NFR:** NFR-4.2
@@ -307,7 +330,7 @@ Returns the updated user object.
 
 Returns the profile of the currently authenticated user (any role).
 
-**Access:** 🟢 `pharmacy` | 🟡 `warehouse_manager` | 🔴 `admin`
+**Access:** 🟢 `public_user` | 🟡 `pharmacy_manager` | 🔴 `admin`
 
 #### Response `200 OK`
 
@@ -319,9 +342,9 @@ Returns the calling user's document (excluding `passwordHash`).
 
 ### `GET /api/medicines`
 
-Retrieve all medicines. Excludes soft-deleted records by default.
+Retrieve all medicines **scoped to the authenticated pharmacy tenant**. Excludes soft-deleted records by default. This is the tenant-scoped endpoint — Pharmacy Managers see only their own catalog.
 
-**Access:** 🟢 `pharmacy` | 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-2.5, FR-2.6
 
 #### Query Parameters
@@ -336,6 +359,8 @@ Retrieve all medicines. Excludes soft-deleted records by default.
 | `page` | Integer | Page number. |
 | `limit` | Integer | Results per page. |
 
+> **Tenant Scoping:** The API automatically filters by `pharmacyId` from the JWT. A Pharmacy Manager at Pharmacy A will never see Pharmacy B's medicines through this endpoint.
+
 #### Response `200 OK`
 
 ```json
@@ -344,6 +369,7 @@ Retrieve all medicines. Excludes soft-deleted records by default.
   "data": [
     {
       "_id": "64b2a3c4d5e6f7a8b9c0d2e3",
+      "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
       "name": "Amoxicillin 250mg",
       "sku": "AMX250",
       "genericName": "Amoxicillin",
@@ -352,12 +378,15 @@ Retrieve all medicines. Excludes soft-deleted records by default.
       "unitOfMeasure": "capsule",
       "totalStock": 480,
       "reorderThreshold": 50,
+      "isLowStock": false,
       "batches": [
         {
           "_id": "64b2a3c4d5e6f7a8b9c0d2e4",
           "batchNumber": "BATCH-AMX-2025-01",
+          "gtin": "00614141000418",
           "quantity": 480,
           "expiryDate": "2027-06-30T00:00:00Z",
+          "supplierName": "Addis Pharma Distributors",
           "shelfLocation": "Aisle-B, Shelf-3",
           "receivedAt": "2026-01-15T08:30:00Z"
         }
@@ -373,11 +402,74 @@ Retrieve all medicines. Excludes soft-deleted records by default.
 
 ---
 
+### `GET /api/medicines/marketplace`
+
+**Global marketplace search** — aggregates medicines across **all active pharmacy tenants**. This is the primary consumer-facing discovery endpoint. Sensitive tenant data (supplier names, shelf locations, internal batch details) is excluded from responses.
+
+**Access:** 🔓 Public (no authentication required)  
+**FR:** FR-2.6
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | String | Case-insensitive partial name search. |
+| `genericName` | String | Search by generic/INN drug name. |
+| `category` | String | Filter by category. |
+| `city` | String | Filter by pharmacy city (e.g., `"Addis Ababa"`, `"Bahir Dar"`). |
+| `page` | Integer | Page number. |
+| `limit` | Integer | Results per page. |
+
+#### Response `200 OK`
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "medicineId": "64b2a3c4d5e6f7a8b9c0d2e3",
+      "name": "Amoxicillin 250mg",
+      "genericName": "Amoxicillin",
+      "category": "Antibiotic",
+      "unitPrice": 12.75,
+      "unitOfMeasure": "capsule",
+      "totalStock": 480,
+      "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
+      "pharmacyName": "Dr. Abebe Pharmacy",
+      "pharmacyPhone": "+251911234567",
+      "pharmacyAddress": "Bole, Addis Ababa",
+      "pharmacyCity": "Addis Ababa",
+      "pharmacyLocation": { "lat": 9.0054, "lng": 38.7636 }
+    },
+    {
+      "medicineId": "64b2a3c4d5e6f7a8b9c0d8f1",
+      "name": "Amoxicillin 250mg",
+      "genericName": "Amoxicillin",
+      "category": "Antibiotic",
+      "unitPrice": 11.50,
+      "unitOfMeasure": "capsule",
+      "totalStock": 320,
+      "pharmacyId": "710f3a4b5c6d7e8f9a0b1c2d",
+      "pharmacyName": "City Pharmacy",
+      "pharmacyPhone": "+251922345678",
+      "pharmacyAddress": "Kebele 04, Bahir Dar",
+      "pharmacyCity": "Bahir Dar",
+      "pharmacyLocation": { "lat": 11.5936, "lng": 37.3886 }
+    }
+  ],
+  "pagination": { "total": 245, "page": 1, "limit": 20, "totalPages": 13 }
+}
+```
+
+> **Public-Safe Fields Only:** No `supplierName`, `shelfLocation`, `batchNumber`, `gtin`, or `createdBy` data is exposed. The pharmacy's public profile (`pharmacyName`, `pharmacyPhone`, `pharmacyAddress`, `pharmacyCity`, `pharmacyLocation`) is included so patients know where to go and how to contact the pharmacy. `pharmacyLocation` is only present if the pharmacy has registered GPS coordinates.
+
+---
+
 ### `POST /api/medicines`
 
-Add a new medicine to the catalog. The first batch may be included in the request body.
+Add a new medicine to the pharmacy's local catalog. The `pharmacyId` is automatically injected from the JWT — it is never accepted from the request body. The first batch may be included in the request.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-2.1, FR-2.2, FR-2.3
 
 #### Request Body
@@ -413,13 +505,15 @@ Add a new medicine to the catalog. The first batch may be included in the reques
 | `reorderThreshold` | Number | ❌ | Default `50` |
 | `initialBatch` | Object | ❌ | If provided, `batchNumber`, `quantity`, `expiryDate` are required inside. |
 
+> **Tenant Scoping:** The `pharmacyId` is automatically set from the JWT. Attempting to include `pharmacyId` in the request body has no effect.
+
 #### Response `201 Created`
 
 ```json
 {
   "success": true,
   "message": "Medicine added successfully.",
-  "data": { /* full medicine document */ }
+  "data": { /* full medicine document with pharmacyId */ }
 }
 ```
 
@@ -434,9 +528,9 @@ Add a new medicine to the catalog. The first batch may be included in the reques
 
 ### `GET /api/medicines/:id`
 
-Retrieve a single medicine record with all batch details.
+Retrieve a single medicine record with all batch details. Pharmacy Managers can only access medicines within their own `pharmacyId` boundary.
 
-**Access:** 🟢 `pharmacy` | 🟡 `warehouse_manager` | 🔴 `admin`
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`
 
 #### Response `200 OK`
 
@@ -446,9 +540,9 @@ Returns the full medicine document including the `batches` array.
 
 ### `PATCH /api/medicines/:id`
 
-Update medicine metadata (name, category, price, reorder threshold). Does **not** adjust stock — use the GRN/GIN endpoint for that.
+Update medicine metadata (name, category, price, reorder threshold). Does **not** adjust stock — use the GRN/GIN endpoint for that. Only the owning pharmacy tenant can modify their own medicines.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-2.1
 
 #### Request Body (all fields optional)
@@ -469,9 +563,9 @@ Returns the updated medicine document.
 
 ### `DELETE /api/medicines/:id`
 
-**Soft-delete** a medicine. Sets `isDeleted: true`, `deletedAt` to server time. The medicine is hidden from default queries but preserved for historic order and audit records.
+**Soft-delete** a medicine. Sets `isDeleted: true`, `deletedAt` to server time. The medicine is hidden from default queries and marketplace search but preserved for historic order and audit records. Only the owning pharmacy tenant can delete their own medicines.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **NFR:** NFR-4.2
 
 #### Response `200 OK`
@@ -487,9 +581,9 @@ Returns the updated medicine document.
 
 ### `POST /api/medicines/:id/batches`
 
-Add a **new batch** to an existing medicine. Also increases `totalStock` atomically via a GRN transaction.
+Add a **new batch** to an existing medicine in the pharmacy's catalog. Also increases `totalStock` atomically via a GRN transaction.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-2.2, FR-2.7
 
 #### Request Body
@@ -522,13 +616,13 @@ Add a **new batch** to an existing medicine. Also increases `totalStock` atomica
 
 ## 5. Inventory Transactions — GRN / GIN
 
-A strict stock movement ledger. Every stock change (outside of order fulfillment) is recorded here.
+A strict, tenant-scoped, **immutable** stock movement ledger. Every stock change (outside of order fulfillment) is recorded here. Once created, transaction records cannot be modified or deleted — schema-level Mongoose pre-hooks enforce immutability.
 
 ### `GET /api/inventory-transactions`
 
-List all GRN/GIN transactions.
+List all GRN/GIN transactions for the authenticated pharmacy tenant.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-2.7
 
 #### Query Parameters
@@ -537,10 +631,12 @@ List all GRN/GIN transactions.
 |-----------|------|-------------|
 | `medicineId` | ObjectId | Filter by medicine. |
 | `type` | String | `GRN` or `GIN`. |
-| `createdBy` | ObjectId | Filter by the warehouse user who recorded it. |
+| `createdBy` | ObjectId | Filter by the pharmacy user who recorded it. |
 | `startDate` | Date | Filter from this date (ISO 8601). |
 | `endDate` | Date | Filter to this date. |
 | `page` / `limit` | Integer | Pagination. |
+
+> **Tenant Scoping:** Results are automatically filtered by `pharmacyId` from the JWT. A pharmacy manager only sees their own transactions.
 
 #### Response `200 OK`
 
@@ -550,6 +646,7 @@ List all GRN/GIN transactions.
   "data": [
     {
       "_id": "64c3b4d5e6f7a8b9c0d3e4f5",
+      "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
       "transactionType": "GRN",
       "medicineId": { "_id": "...", "name": "Amoxicillin 250mg", "sku": "AMX250" },
       "batchNumber": "BATCH-AMX-2026-01",
@@ -558,8 +655,8 @@ List all GRN/GIN transactions.
       "stockAfter": 680,
       "reason": "Received from supplier.",
       "referenceNumber": "PO-2026-0041",
-      "createdBy": { "_id": "...", "name": "Abebe Girma" },
-      "createdAt": "2026-02-26T09:00:00Z"
+      "createdBy": { "_id": "...", "name": "Dr. Abebe Pharmacy" },
+      "createdAt": "2026-03-31T09:00:00Z"
     }
   ],
   "pagination": { "total": 34, "page": 1, "limit": 20, "totalPages": 2 }
@@ -570,10 +667,10 @@ List all GRN/GIN transactions.
 
 ### `POST /api/inventory-transactions`
 
-Record a GRN (stock in) or GIN (stock out / write-off). Updates `medicines.totalStock` atomically.
+Record a GRN (stock in) or GIN (stock out / write-off) within the pharmacy tenant's boundary. Updates `medicines.totalStock` atomically. Creates an **immutable** transaction record with `stockBefore` and `stockAfter` values.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
-**FR:** FR-2.7  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
+**FR:** FR-2.7, NFR-4.4  
 **SDS:** §Technical Logic — `Snew = Sold + Qadjustment`
 
 #### Request Body
@@ -593,11 +690,13 @@ Record a GRN (stock in) or GIN (stock out / write-off). Updates `medicines.total
 | Field | Type | Required | Rules |
 |-------|------|----------|-------|
 | `transactionType` | String | ✅ | `GRN` or `GIN` |
-| `medicineId` | ObjectId | ✅ | Must reference an active medicine |
+| `medicineId` | ObjectId | ✅ | Must reference a medicine owned by the authenticated pharmacy |
 | `batchNumber` | String | ✅ | Must exist on the medicine's batches |
 | `quantityChanged` | Number | ✅ | Positive for GRN, negative for GIN |
 | `reason` | String | Required for GIN | Mandatory justification for removals |
 | `referenceNumber` | String | ❌ | External document reference |
+
+> **Tenant Scoping:** The `pharmacyId` is injected from JWT. The API validates that the referenced `medicineId` belongs to the authenticated tenant.
 
 #### Response `201 Created`
 
@@ -606,7 +705,7 @@ Record a GRN (stock in) or GIN (stock out / write-off). Updates `medicines.total
   "success": true,
   "message": "Inventory transaction recorded.",
   "data": {
-    "transaction": { /* full transaction document */ },
+    "transaction": { /* full immutable transaction document */ },
     "updatedStock": 450
   }
 }
@@ -618,16 +717,19 @@ Record a GRN (stock in) or GIN (stock out / write-off). Updates `medicines.total
 |--------|------|--------|
 | `400` | `INSUFFICIENT_STOCK` | GIN would bring stock below zero. |
 | `404` | `BATCH_NOT_FOUND` | Batch number not found on the medicine. |
+| `404` | `MEDICINE_NOT_FOUND` | Medicine not found within the tenant's catalog. |
 
 ---
 
 ## 6. Orders
 
+Orders are **cross-tenant entities** — they bridge a Public User (consumer) and a Pharmacy (tenant). The `customerId` identifies who placed the order; the `pharmacyId` identifies which pharmacy fulfills it.
+
 ### `GET /api/orders`
 
-List orders. Pharmacy users see only their own orders. Warehouse managers and admins see all.
+List orders. Public Users see only their own placed orders. Pharmacy Managers see only incoming orders for their pharmacy. Admins see all.
 
-**Access:** 🟢 `pharmacy` | 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟢 `public_user` | 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-3.5
 
 #### Query Parameters
@@ -636,10 +738,15 @@ List orders. Pharmacy users see only their own orders. Warehouse managers and ad
 |-----------|------|-------------|
 | `status` | String | Filter by order status (e.g., `pending`, `approved`). |
 | `paymentStatus` | String | Filter by `unpaid`, `partially_paid`, `paid`. |
-| `pharmacyId` | ObjectId | Admin/Warehouse only — filter by pharmacy. |
+| `pharmacyId` | ObjectId | Admin only — filter by pharmacy tenant. |
 | `startDate` | Date | Created from date. |
 | `endDate` | Date | Created to date. |
 | `page` / `limit` | Integer | Pagination. |
+
+> **Scoping Rules:**
+> - `public_user` → sees only orders where `customerId` matches their own userId.
+> - `pharmacy_manager` → sees only orders where `pharmacyId` matches their JWT `pharmacyId`.
+> - `admin` → sees all orders across all tenants.
 
 #### Response `200 OK`
 
@@ -649,7 +756,8 @@ List orders. Pharmacy users see only their own orders. Warehouse managers and ad
   "data": [
     {
       "_id": "64d4c5e6f7a8b9c0d4e5f601",
-      "pharmacyId": { "_id": "...", "name": "Selam Pharmacy" },
+      "customerId": { "_id": "...", "name": "Kebede Alemu" },
+      "pharmacyId": { "_id": "...", "name": "Dr. Abebe Pharmacy" },
       "items": [
         {
           "medicineId": "64b2a3c4d5e6f7a8b9c0d2e3",
@@ -662,8 +770,9 @@ List orders. Pharmacy users see only their own orders. Warehouse managers and ad
       ],
       "totalAmount": 637.50,
       "status": "pending",
+      "fulfillmentMethod": "pickup",
       "paymentStatus": "unpaid",
-      "createdAt": "2026-02-26T10:00:00Z"
+      "createdAt": "2026-03-31T10:00:00Z"
     }
   ],
   "pagination": { "total": 58, "page": 1, "limit": 20, "totalPages": 3 }
@@ -674,29 +783,49 @@ List orders. Pharmacy users see only their own orders. Warehouse managers and ad
 
 ### `POST /api/orders`
 
-Submit a new purchase order. The API validates stock availability before creating the order (pre-flight check).
+Submit a new purchase order targeting a specific pharmacy. The API stamps the order with the consumer's `customerId` (from JWT) and the target `pharmacyId` (from request body). Stock availability at the target pharmacy is validated before creating the order.
 
-**Access:** 🟢 `pharmacy`  
+**Access:** 🟢 `public_user`  
 **FR:** FR-3.1, FR-3.2
 
 #### Request Body
 
 ```json
 {
+  "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
   "items": [
     { "medicineId": "64b2a3c4d5e6f7a8b9c0d2e3", "quantity": 50 },
     { "medicineId": "64b2a3c4d5e6f7a8b9c0d2e9", "quantity": 20 }
-  ]
+  ],
+  "fulfillmentMethod": "pickup"
+}
+```
+
+For delivery orders:
+
+```json
+{
+  "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
+  "items": [
+    { "medicineId": "64b2a3c4d5e6f7a8b9c0d2e3", "quantity": 50 }
+  ],
+  "fulfillmentMethod": "delivery",
+  "deliveryAddress": "Kebele 14, Bole Sub-city, Addis Ababa"
 }
 ```
 
 | Field | Type | Required | Rules |
 |-------|------|----------|-------|
+| `pharmacyId` | ObjectId | ✅ | Must reference an active pharmacy tenant |
 | `items` | Array | ✅ | At least 1 item |
-| `items[].medicineId` | ObjectId | ✅ | Must be an active, non-deleted medicine |
-| `items[].quantity` | Number | ✅ | `>= 1`; must not exceed `totalStock` |
+| `items[].medicineId` | ObjectId | ✅ | Must be an active, non-deleted medicine **at the target pharmacy** |
+| `items[].quantity` | Number | ✅ | `>= 1`; must not exceed `totalStock` at the target pharmacy |
+| `fulfillmentMethod` | String | ❌ | `pickup` (default) or `delivery`. Determines how the patient receives the order. |
+| `deliveryAddress` | String | Required when `fulfillmentMethod = 'delivery'` | Patient's delivery destination. Falls back to the patient's registered `address` if omitted. |
 
-> **Stock Pre-flight:** The backend checks `totalStock >= requestedQty` for **all** items. If any item fails, the entire order is rejected with a `400` listing which medicines are under-stocked.
+> **Cross-Tenant Logic:** The `customerId` is set automatically from the authenticated Public User's JWT. The `pharmacyId` must be provided in the request body — this is the **only** case where a `pharmacyId` is accepted from the client, because the consumer is specifying which pharmacy they want to order from (discovered via the marketplace search).
+
+> **Stock Pre-flight:** The backend checks `totalStock >= requestedQty` for **all** items at the target pharmacy within a MongoDB transaction. If any item fails, the entire order is rejected with a `400` listing which medicines are under-stocked.
 
 #### Response `201 Created`
 
@@ -706,10 +835,13 @@ Submit a new purchase order. The API validates stock availability before creatin
   "message": "Order placed successfully.",
   "data": {
     "_id": "64d4c5e6f7a8b9c0d4e5f601",
+    "customerId": "u5",
+    "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
     "status": "pending",
+    "fulfillmentMethod": "pickup",
     "totalAmount": 637.50,
-    "items": [ /* line items with snapshot prices */ ],
-    "createdAt": "2026-02-26T10:00:00Z"
+    "items": [ /* line items with snapshot prices from the pharmacy's catalog */ ],
+    "createdAt": "2026-03-31T10:00:00Z"
   }
 }
 ```
@@ -718,16 +850,17 @@ Submit a new purchase order. The API validates stock availability before creatin
 
 | Status | Code | Reason |
 |--------|------|--------|
-| `400` | `INSUFFICIENT_STOCK` | One or more items exceed available stock. |
+| `400` | `INSUFFICIENT_STOCK` | One or more items exceed available stock at the target pharmacy. |
 | `400` | `VALIDATION_ERROR` | Missing fields or invalid medicine IDs. |
+| `404` | `PHARMACY_NOT_FOUND` | Target pharmacy does not exist or is inactive. |
 
 ---
 
 ### `GET /api/orders/:id`
 
-Retrieve a single order with full details including status history.
+Retrieve a single order with full details including status history. Public Users can only access their own orders. Pharmacy Managers can only access orders within their `pharmacyId`.
 
-**Access:** 🟢 `pharmacy` (own orders only) | 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟢 `public_user` (own orders only) | 🟡 `pharmacy_manager` (own pharmacy's orders) | 🔴 `admin`  
 **FR:** FR-3.5
 
 #### Response `200 OK`
@@ -737,18 +870,19 @@ Retrieve a single order with full details including status history.
   "success": true,
   "data": {
     "_id": "64d4c5e6f7a8b9c0d4e5f601",
-    "pharmacyId": { "_id": "...", "name": "Selam Pharmacy" },
+    "customerId": { "_id": "...", "name": "Kebede Alemu" },
+    "pharmacyId": { "_id": "...", "name": "Dr. Abebe Pharmacy" },
     "items": [ /* ... */ ],
     "totalAmount": 637.50,
     "status": "approved",
     "paymentStatus": "unpaid",
-    "approvedBy": { "_id": "...", "name": "Abebe Girma" },
-    "approvedAt": "2026-02-26T11:30:00Z",
+    "approvedBy": { "_id": "...", "name": "Dr. Abebe Pharmacy" },
+    "approvedAt": "2026-03-31T11:30:00Z",
     "statusHistory": [
-      { "status": "pending",  "changedBy": "...", "changedAt": "2026-02-26T10:00:00Z", "note": null },
-      { "status": "approved", "changedBy": "...", "changedAt": "2026-02-26T11:30:00Z", "note": null }
+      { "status": "pending",  "changedBy": "...", "changedAt": "2026-03-31T10:00:00Z", "note": null },
+      { "status": "approved", "changedBy": "...", "changedAt": "2026-03-31T11:30:00Z", "note": null }
     ],
-    "createdAt": "2026-02-26T10:00:00Z"
+    "createdAt": "2026-03-31T10:00:00Z"
   }
 }
 ```
@@ -757,21 +891,21 @@ Retrieve a single order with full details including status history.
 
 ### `PATCH /api/orders/:id/status`
 
-Update the status of an order. This is the primary workflow action endpoint for warehouse managers.
+Update the status of an order. This is the primary workflow action endpoint for Pharmacy Managers to process incoming consumer orders. Only the owning pharmacy tenant can update their orders.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-3.3, FR-3.4  
-**NFR:** NFR-2.4 (Atomic transactions on approval)
+**NFR:** NFR-2.5 (Atomic transactions on approval)
 
 #### Allowed Status Transitions
 
 | From | To | Actor | Side Effects |
 |------|----|-------|-------------|
-| `pending` | `approved` | Warehouse Manager | **Atomically decrements** `medicines.totalStock` for all items. |
-| `pending` | `rejected` | Warehouse Manager | Requires `rejectionReason` in body. No stock change. |
-| `approved` | `processing` | Warehouse Manager | No stock change. |
-| `processing` | `dispatched` | Warehouse Manager | No stock change. |
-| `dispatched` | `delivered` | Warehouse Manager | No stock change. |
+| `pending` | `approved` | Pharmacy Manager | **Atomically decrements** `medicines.totalStock` for all items within a MongoDB transaction. Creates immutable `inventoryTransaction` records. |
+| `pending` | `rejected` | Pharmacy Manager | Requires `rejectionReason` in body. No stock change. |
+| `approved` | `processing` | Pharmacy Manager | No stock change. |
+| `processing` | `ready` | Pharmacy Manager | No stock change. For `pickup` orders: "ready for collection at the pharmacy." For `delivery` orders: "packed and awaiting dispatch." |
+| `ready` | `delivered` | Pharmacy Manager | No stock change. For `pickup`: patient collected the order. For `delivery`: order handed off at patient's address. |
 
 #### Request Body
 
@@ -797,6 +931,8 @@ For `rejected` status:
 | `rejectionReason` | String | Required when `status = rejected` | |
 | `note` | String | ❌ | Optional note for this transition |
 
+> **Tenant Scoping:** The API verifies that `order.pharmacyId` matches the authenticated manager's `pharmacyId`. A Pharmacy Manager at Pharmacy A cannot process orders belonging to Pharmacy B.
+
 #### Response `200 OK`
 
 ```json
@@ -807,7 +943,7 @@ For `rejected` status:
     "_id": "64d4c5e6f7a8b9c0d4e5f601",
     "status": "approved",
     "approvedBy": "64a1f2b3c4d5e6f7a8b9c0d1",
-    "approvedAt": "2026-02-26T11:30:00Z",
+    "approvedAt": "2026-03-31T11:30:00Z",
     "statusHistory": [ /* updated */ ]
   }
 }
@@ -819,6 +955,7 @@ For `rejected` status:
 |--------|------|--------|
 | `400` | `INVALID_TRANSITION` | Requested status change is not a valid lifecycle step. |
 | `400` | `REJECTION_REASON_REQUIRED` | `rejectionReason` missing when rejecting. |
+| `403` | `TENANT_MISMATCH` | Pharmacy Manager does not own this order. |
 | `409` | `INSUFFICIENT_STOCK` | Stock levels changed since order was placed; approval blocked. |
 
 ---
@@ -827,9 +964,9 @@ For `rejected` status:
 
 ### `GET /api/payments`
 
-List payment records. Pharmacy users see only payments linked to their orders.
+List payment records. Public Users see only payments linked to their own orders. Pharmacy Managers see only payments within their tenant boundary.
 
-**Access:** 🟢 `pharmacy` | 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟢 `public_user` | 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-4.3
 
 #### Query Parameters
@@ -837,10 +974,15 @@ List payment records. Pharmacy users see only payments linked to their orders.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `orderId` | ObjectId | Filter by order. |
-| `pharmacyId` | ObjectId | Filter by pharmacy (admin/warehouse only). |
-| `method` | String | `bank_transfer`, `cash`, `credit`. |
+| `pharmacyId` | ObjectId | Filter by pharmacy (admin only). |
+| `paymentMethod` | String | `bank_transfer`, `cash`, `mobile_money`. |
 | `startDate` | Date | Filter from timestamp. |
 | `endDate` | Date | Filter to timestamp. |
+
+> **Scoping Rules:**
+> - `public_user` → sees only payments where `customerId` matches their userId.
+> - `pharmacy_manager` → sees only payments where `pharmacyId` matches their JWT `pharmacyId`.
+> - `admin` → sees all payments across all tenants.
 
 #### Response `200 OK`
 
@@ -851,13 +993,14 @@ List payment records. Pharmacy users see only payments linked to their orders.
     {
       "_id": "64e5d6f7a8b9c0d5e6f7a801",
       "orderId": "64d4c5e6f7a8b9c0d4e5f601",
-      "pharmacyId": { "_id": "...", "name": "Selam Pharmacy" },
+      "pharmacyId": { "_id": "...", "name": "Dr. Abebe Pharmacy" },
+      "customerId": { "_id": "...", "name": "Kebede Alemu" },
       "amount": 300.00,
-      "method": "bank_transfer",
-      "transactionId": "TXN-ETB-20260226-001",
-      "status": "confirmed",
-      "recordedBy": { "_id": "...", "name": "Abebe Girma" },
-      "timestamp": "2026-02-26T13:00:00Z"
+      "paymentMethod": "bank_transfer",
+      "transactionId": "TXN-ETB-20260331-001",
+      "status": "completed",
+      "recordedBy": { "_id": "...", "name": "Dr. Abebe Pharmacy" },
+      "createdAt": "2026-03-31T13:00:00Z"
     }
   ],
   "pagination": { "total": 22, "page": 1, "limit": 20, "totalPages": 2 }
@@ -868,9 +1011,9 @@ List payment records. Pharmacy users see only payments linked to their orders.
 
 ### `POST /api/payments`
 
-Record a payment transaction against an order. After saving, the system recalculates `orders.paymentStatus`.
+Record a payment transaction against an order within the pharmacy tenant's boundary. After saving, the system recalculates `orders.paymentStatus`.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-4.1, FR-4.2, FR-4.4
 
 #### Request Body
@@ -879,19 +1022,21 @@ Record a payment transaction against an order. After saving, the system recalcul
 {
   "orderId": "64d4c5e6f7a8b9c0d4e5f601",
   "amount": 300.00,
-  "method": "bank_transfer",
-  "transactionId": "TXN-ETB-20260226-001",
+  "paymentMethod": "bank_transfer",
+  "transactionId": "TXN-ETB-20260331-001",
   "note": "Partial payment. Balance due by end of month."
 }
 ```
 
 | Field | Type | Required | Rules |
 |-------|------|----------|-------|
-| `orderId` | ObjectId | ✅ | Must reference a non-rejected order |
+| `orderId` | ObjectId | ✅ | Must reference a non-rejected order within the manager's pharmacy |
 | `amount` | Number | ✅ | `> 0`; cannot exceed remaining balance |
-| `method` | String | ✅ | `bank_transfer` / `cash` / `credit` |
+| `paymentMethod` | String | ✅ | `bank_transfer` / `cash` / `mobile_money` |
 | `transactionId` | String | ❌ | Required for bank transfers |
 | `note` | String | ❌ | Free-text note |
+
+> **Tenant Scoping:** The `pharmacyId` and `customerId` are automatically derived from the order record. The API verifies that `order.pharmacyId` matches the authenticated manager's `pharmacyId`.
 
 #### Response `201 Created`
 
@@ -914,6 +1059,7 @@ Record a payment transaction against an order. After saving, the system recalcul
 |--------|------|--------|
 | `400` | `VALIDATION_ERROR` | Missing fields or amount ≤ 0. |
 | `400` | `OVERPAYMENT` | Amount exceeds remaining order balance. |
+| `403` | `TENANT_MISMATCH` | Order does not belong to the authenticated pharmacy. |
 | `404` | `ORDER_NOT_FOUND` | Referenced order does not exist. |
 | `409` | `ORDER_ALREADY_PAID` | Order `paymentStatus` is already `paid`. |
 
@@ -921,25 +1067,25 @@ Record a payment transaction against an order. After saving, the system recalcul
 
 ### `GET /api/payments/:id`
 
-Retrieve a single payment record.
+Retrieve a single payment record. Access is scoped by role (Pharmacy Managers can only view their own tenant's payments).
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`
 
 #### Response `200 OK`
 
-Returns the full payment document populated with `orderId` and `recordedBy` references.
+Returns the full payment document populated with `orderId`, `customerId`, and `recordedBy` references.
 
 ---
 
 ## 8. Reports & Analytics
 
-All report endpoints require at minimum `warehouse_manager` role. They are read-only and never modify data.
+Report endpoints are read-only and never modify data. Pharmacy Managers see tenant-scoped metrics; Admins see platform-wide analytics.
 
 ### `GET /api/reports/inventory`
 
-Generate a full inventory report including batch details and stock valuations.
+Generate an inventory report including batch details and stock valuations, **scoped to the authenticated pharmacy tenant**.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-2.5, FR-5.1
 
 #### Query Parameters
@@ -956,7 +1102,9 @@ Generate a full inventory report including batch details and stock valuations.
 {
   "success": true,
   "data": {
-    "generatedAt": "2026-02-26T15:00:00Z",
+    "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
+    "pharmacyName": "Dr. Abebe Pharmacy",
+    "generatedAt": "2026-03-31T15:00:00Z",
     "totalMedicines": 87,
     "totalStockValue": 245780.50,
     "lowStockItems": 4,
@@ -981,9 +1129,9 @@ Generate a full inventory report including batch details and stock valuations.
 
 ### `GET /api/reports/sales`
 
-Generate daily or monthly sales statistics.
+Generate daily or monthly sales statistics, **scoped to the authenticated pharmacy tenant**.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-5.2
 
 #### Query Parameters
@@ -1001,8 +1149,9 @@ Generate daily or monthly sales statistics.
 {
   "success": true,
   "data": {
-    "startDate": "2026-02-01T00:00:00Z",
-    "endDate": "2026-02-26T23:59:59Z",
+    "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
+    "startDate": "2026-03-01T00:00:00Z",
+    "endDate": "2026-03-31T23:59:59Z",
     "totalRevenue": 128450.25,
     "totalOrders": 62,
     "deliveredOrders": 54,
@@ -1010,7 +1159,7 @@ Generate daily or monthly sales statistics.
       { "name": "Amoxicillin 250mg", "sku": "AMX250", "qtySold": 1200, "revenue": 15300.00 }
     ],
     "timeline": [
-      { "date": "2026-02-01", "orderCount": 4, "revenue": 5100.00 }
+      { "date": "2026-03-01", "orderCount": 4, "revenue": 5100.00 }
     ]
   }
 }
@@ -1020,9 +1169,9 @@ Generate daily or monthly sales statistics.
 
 ### `GET /api/reports/expiring`
 
-List all stock batches expiring on or before a given date.
+List all stock batches expiring on or before a given date, **scoped to the authenticated pharmacy tenant**.
 
-**Access:** 🟡 `warehouse_manager` | 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-5.3
 
 #### Query Parameters
@@ -1038,8 +1187,9 @@ List all stock batches expiring on or before a given date.
 {
   "success": true,
   "data": {
-    "generatedAt": "2026-02-26T15:00:00Z",
-    "cutoffDate": "2026-05-26T00:00:00Z",
+    "pharmacyId": "64a1f2b3c4d5e6f7a8b9c0d1",
+    "generatedAt": "2026-03-31T15:00:00Z",
+    "cutoffDate": "2026-06-30T00:00:00Z",
     "items": [
       {
         "medicineId": "64b2a3c4d5e6f7a8b9c0d2e3",
@@ -1049,9 +1199,41 @@ List all stock batches expiring on or before a given date.
         "quantity": 120,
         "expiryDate": "2026-04-15T00:00:00Z",
         "shelfLocation": "Aisle-A, Shelf-1",
-        "daysUntilExpiry": 48
+        "daysUntilExpiry": 15
       }
     ]
+  }
+}
+```
+
+---
+
+### `GET /api/reports/platform`
+
+Platform-wide analytics for System Administrators. Aggregates metrics across all pharmacy tenants.
+
+**Access:** 🔴 `admin`  
+**FR:** FR-5.5
+
+#### Response `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "generatedAt": "2026-03-31T15:00:00Z",
+    "activeTenants": 42,
+    "totalMedicines": 3650,
+    "totalOrders": 8920,
+    "totalGMV": 1245000.00,
+    "ordersByStatus": {
+      "pending": 120,
+      "approved": 85,
+      "processing": 40,
+      "ready": 22,
+      "delivered": 8500,
+      "rejected": 153
+    }
   }
 }
 ```
@@ -1062,9 +1244,9 @@ List all stock batches expiring on or before a given date.
 
 ### `GET /api/logs`
 
-Retrieve the global, immutable audit log. **Read-only — no create, update, or delete endpoints exist for this collection.**
+Retrieve the immutable audit log. **Read-only — no create, update, or delete endpoints exist for this collection.** Admins see cross-tenant logs; Pharmacy Managers see only logs related to their `pharmacyId`.
 
-**Access:** 🔴 `admin`  
+**Access:** 🟡 `pharmacy_manager` | 🔴 `admin`  
 **FR:** FR-5.4, NFR-4.1
 
 #### Query Parameters
@@ -1079,6 +1261,10 @@ Retrieve the global, immutable audit log. **Read-only — no create, update, or 
 | `endDate` | Date | Filter to timestamp. |
 | `page` / `limit` | Integer | Pagination. |
 
+> **Scoping Rules:**
+> - `pharmacy_manager` → sees only audit logs where the affected resource belongs to their `pharmacyId`.
+> - `admin` → sees all audit logs across all tenants for compliance investigations.
+
 #### Response `200 OK`
 
 ```json
@@ -1087,21 +1273,22 @@ Retrieve the global, immutable audit log. **Read-only — no create, update, or 
   "data": [
     {
       "_id": "64f6e7f8a9b0c1d6e7f8a902",
-      "userId": { "_id": "...", "name": "Abebe Girma", "role": "warehouse_manager" },
+      "userId": { "_id": "...", "name": "Dr. Abebe Pharmacy", "role": "pharmacy_manager" },
       "actionType": "APPROVE",
       "resource": "Order",
       "resourceId": "64d4c5e6f7a8b9c0d4e5f601",
       "before": { "status": "pending" },
       "after":  { "status": "approved", "approvedBy": "...", "approvedAt": "..." },
       "ipAddress": "196.188.45.10",
-      "timestamp": "2026-02-26T11:30:00Z"
+      "userAgent": "Mozilla/5.0 ...",
+      "timestamp": "2026-03-31T11:30:00Z"
     }
   ],
   "pagination": { "total": 1204, "page": 1, "limit": 20, "totalPages": 61 }
 }
 ```
 
-> **Immutability Note:** The API exposes no `POST`, `PATCH`, or `DELETE` endpoint for `/api/logs`. New entries are created automatically by the backend service layer on every data-modifying operation (NFR-4.1, 21 CFR Part 11).
+> **Immutability Note:** The API exposes no `POST`, `PATCH`, or `DELETE` endpoint for `/api/logs`. New entries are created automatically by the centralized `auditLogger.ts` utility on every data-modifying operation (NFR-4.1, 21 CFR Part 11). Mongoose schema pre-hooks block any attempt to modify or delete audit records at the database level.
 
 ---
 
@@ -1114,7 +1301,7 @@ All error responses follow a consistent envelope:
   "success": false,
   "error": {
     "code": "INSUFFICIENT_STOCK",
-    "message": "Requested quantity for AMX250 exceeds available stock (480 available, 600 requested).",
+    "message": "Requested quantity for AMX250 exceeds available stock at this pharmacy (480 available, 600 requested).",
     "details": [ /* optional: array of field-level validation errors */ ]
   }
 }
@@ -1128,8 +1315,8 @@ All error responses follow a consistent envelope:
 | `201 Created` | Resource created | POST operations completed. |
 | `400 Bad Request` | Client error | Validation failure, invalid transition, insufficient stock. |
 | `401 Unauthorized` | Auth missing/invalid | No token, expired token, invalid signature. |
-| `403 Forbidden` | Insufficient role | User role does not permit the requested action. |
-| `404 Not Found` | Resource absent | ID does not exist or is soft-deleted. |
+| `403 Forbidden` | Insufficient role or tenant mismatch | User role does not permit the action, or pharmacy manager attempting to access another tenant's data. |
+| `404 Not Found` | Resource absent | ID does not exist, is soft-deleted, or does not belong to the authenticated tenant. |
 | `409 Conflict` | Business rule conflict | Duplicate SKU/email, overpayment, already paid order. |
 | `500 Internal Server Error` | Server-side failure | Unhandled exception; stack detail logged server-side only. |
 
@@ -1142,12 +1329,15 @@ All error responses follow a consistent envelope:
 | `INVALID_CREDENTIALS` | `POST /auth/login` | Wrong email or password. |
 | `ACCOUNT_INACTIVE` | `POST /auth/login` | Account is deactivated. |
 | `SKU_EXISTS` | `POST /medicines` | SKU already registered. |
-| `INSUFFICIENT_STOCK` | `POST /orders`, `PATCH /orders/:id/status` | Not enough stock to fulfill. |
+| `INSUFFICIENT_STOCK` | `POST /orders`, `PATCH /orders/:id/status` | Not enough stock at the target pharmacy to fulfill. |
 | `INVALID_TRANSITION` | `PATCH /orders/:id/status` | Status change is not a valid lifecycle step. |
 | `REJECTION_REASON_REQUIRED` | `PATCH /orders/:id/status` | Must provide reason when rejecting. |
 | `BATCH_NOT_FOUND` | `POST /inventory-transactions` | Batch number not found on medicine. |
+| `MEDICINE_NOT_FOUND` | `POST /inventory-transactions` | Medicine not found within tenant's catalog. |
+| `PHARMACY_NOT_FOUND` | `POST /orders` | Target pharmacy does not exist or is inactive. |
 | `ORDER_NOT_FOUND` | `POST /payments` | Order ID does not exist. |
-| `OVERPAYMENT` | `POST /payments` | Amount exceeds remaining balance. |
+| `TENANT_MISMATCH` | Various | Resource does not belong to the authenticated pharmacy tenant. |
+| `OVERPAYMENT` | `POST /payments` | Amount exceeds remaining order balance. |
 | `ORDER_ALREADY_PAID` | `POST /payments` | Order is already fully paid. |
 
 ---
@@ -1157,25 +1347,31 @@ All error responses follow a consistent envelope:
 | Endpoint | Method | FR / NFR |
 |----------|--------|----------|
 | `/api/auth/register` | POST | FR-1.1, FR-1.2 |
-| `/api/auth/login` | POST | FR-1.3, FR-1.5 |
+| `/api/auth/login` | POST | FR-1.3, FR-1.5, FR-1.6 |
 | `/api/users` | GET / PATCH / DELETE | FR-1.4, NFR-4.2, NFR-4.3 |
-| `/api/medicines` | GET | FR-2.5, FR-2.6, NFR-1.4 |
-| `/api/medicines` | POST | FR-2.1, FR-2.2, FR-2.3 |
-| `/api/medicines/:id` | PATCH | FR-2.1 |
-| `/api/medicines/:id` | DELETE | NFR-4.2 |
-| `/api/medicines/:id/batches` | POST | FR-2.2, FR-2.7 |
-| `/api/inventory-transactions` | GET / POST | FR-2.7, FR-2.4 |
+| `/api/users/me` | GET | FR-1.4 |
+| `/api/medicines` | GET | FR-2.5, FR-2.6, NFR-1.4, FR-1.6 |
+| `/api/medicines/marketplace` | GET | FR-2.6, NFR-2.2 |
+| `/api/medicines` | POST | FR-2.1, FR-2.2, FR-2.3, FR-1.6 |
+| `/api/medicines/:id` | GET | FR-2.6, FR-1.6 |
+| `/api/medicines/:id` | PATCH | FR-2.1, FR-1.6 |
+| `/api/medicines/:id` | DELETE | NFR-4.2, FR-1.6 |
+| `/api/medicines/:id/batches` | POST | FR-2.2, FR-2.7, FR-1.6 |
+| `/api/inventory-transactions` | GET | FR-2.7, FR-1.6 |
+| `/api/inventory-transactions` | POST | FR-2.7, FR-2.4, NFR-4.4, FR-1.6 |
 | `/api/orders` | GET | FR-3.5 |
 | `/api/orders` | POST | FR-3.1, FR-3.2 |
 | `/api/orders/:id` | GET | FR-3.5 |
-| `/api/orders/:id/status` | PATCH | FR-3.3, FR-3.4, NFR-2.4, NFR-4.3 |
-| `/api/payments` | GET | FR-4.3 |
-| `/api/payments` | POST | FR-4.1, FR-4.2, FR-4.4 |
-| `/api/reports/inventory` | GET | FR-2.5, FR-5.1 |
-| `/api/reports/sales` | GET | FR-5.2 |
-| `/api/reports/expiring` | GET | FR-5.3 |
+| `/api/orders/:id/status` | PATCH | FR-3.3, FR-3.4, NFR-2.5, NFR-4.3, FR-1.6 |
+| `/api/payments` | GET | FR-4.3, FR-1.6 |
+| `/api/payments` | POST | FR-4.1, FR-4.2, FR-4.4, FR-1.6 |
+| `/api/payments/:id` | GET | FR-4.3, FR-1.6 |
+| `/api/reports/inventory` | GET | FR-2.5, FR-5.1, FR-1.6 |
+| `/api/reports/sales` | GET | FR-5.2, FR-1.6 |
+| `/api/reports/expiring` | GET | FR-5.3, FR-1.6 |
+| `/api/reports/platform` | GET | FR-5.5 |
 | `/api/logs` | GET | FR-5.4, NFR-4.1 |
 
 ---
 
-*End of API Documentation — Pharma-Net v1.0*
+*End of API Documentation — Pharma-Net v2.0*
