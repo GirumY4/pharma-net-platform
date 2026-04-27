@@ -186,7 +186,8 @@ export const getMedicines = async (
 
 /**
  * GET /api/medicines/marketplace
- * Global marketplace search – public access
+ * Global marketplace search – public access (no auth required)
+ * Uses aggregation pipeline for performance + correct city filtering
  */
 export const getMarketplaceMedicines = async (
   req: Request,
@@ -209,7 +210,8 @@ export const getMarketplaceMedicines = async (
     if (name) baseQuery.name = { $regex: name as string, $options: "i" };
     if (genericName)
       baseQuery.genericName = { $regex: genericName as string, $options: "i" };
-    if (category) baseQuery.category = category as string;
+    if (category)
+      baseQuery.category = { $regex: category as string, $options: "i" };
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.min(100, parseInt(limit as string, 10) || 20);
@@ -217,6 +219,8 @@ export const getMarketplaceMedicines = async (
     // Aggregation pipeline to handle pharmacy filtering before pagination
     const pipeline: any[] = [
       { $match: baseQuery },
+
+      // Join with pharmacy (users collection)
       {
         $lookup: {
           from: "users",
@@ -226,17 +230,19 @@ export const getMarketplaceMedicines = async (
         },
       },
       { $unwind: "$pharmacy" },
+
+      // Only active pharmacies
       { $match: { "pharmacy.isActive": true } },
     ];
 
-    // City filter on pharmacy
+    // City filter (applied before pagination)
     if (city) {
       pipeline.push({
         $match: { "pharmacy.city": { $regex: city as string, $options: "i" } },
       });
     }
 
-    // Facet to get total count and paginated results
+    // Facet for total count + paginated data in one query
     pipeline.push({
       $facet: {
         metadata: [{ $count: "total" }],
