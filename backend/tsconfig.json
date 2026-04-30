@@ -22,7 +22,9 @@
     "forceConsistentCasingInFileNames": true,
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
+    // "exactOptionalPropertyTypes": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./.tsbuildinfo",
     // Style Options
     // "noImplicitReturns": true,
     // "noImplicitOverride": true,
@@ -39,5 +41,5 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*"], // Only compile files in src
-  "exclude": ["node_modules", "**/*.spec.ts"]
+  "exclude": ["node_modules", "**/*.spec.ts", "build", "dist"]
 }

@@ -13,4 +13,4 @@ declare global {
   }
 }
 
-export {}; // Required for declaration merging
+export {};

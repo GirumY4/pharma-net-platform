@@ -1,6 +1,6 @@
 // src/features/auth/pages/LoginPage.tsx
 import { useState, type SubmitEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   Box,
@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff, Email, Lock } from "@mui/icons-material";
 import { loginUser } from "../services/authApi";
-import { useAuth } from "../../../contexts/AuthContext";
+import { useAuth, getRoleFromToken } from "../../../contexts/AuthContext";
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -25,7 +25,12 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+
+  // Show success message from registration redirect
+  const registrationMessage =
+    (location.state as { message?: string })?.message || "";
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,8 +41,9 @@ export const LoginPage = () => {
       const response = await loginUser({ email, password });
 
       if (response.success) {
-        login(response.data.token, response.data.user);
-        switch (response.data.user.role) {
+        login(response.data.token);
+        const role = getRoleFromToken(response.data.token);
+        switch (role) {
           case "admin":
             navigate("/admin");
             break;
@@ -188,6 +194,12 @@ export const LoginPage = () => {
             Sign in to your account to continue
           </Typography>
 
+          {registrationMessage && !error && (
+            <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
+              {registrationMessage}
+            </Alert>
+          )}
+
           {error && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
               {error}
@@ -217,6 +229,7 @@ export const LoginPage = () => {
             <TextField
               label="Password"
               type={showPassword ? "text" : "password"}
+              type="password"
               fullWidth
               margin="normal"
               value={password}

@@ -7,22 +7,33 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { jwtDecode } from "jwt-decode";
 import api from "../services/api";
-import type { IUser, ApiResponse } from "../types";
+import type { IUser, ApiResponse, UserRole } from "../types";
 
 interface AuthState {
   token: string | null;
   user: IUser | null;
   isAuthenticated: boolean;
   isLoading: boolean; // true while checking /me on mount
-  login: (
-    token: string,
-    baseUser: { _id: string; name: string; role: IUser["role"] },
-  ) => void;
+  login: (token: string) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
+
+/**
+ * Decode the JWT to extract the user role for immediate redirect
+ * after login, without waiting for the /me API call.
+ */
+export const getRoleFromToken = (token: string): UserRole | null => {
+  try {
+    const payload = jwtDecode<{ role: UserRole }>(token);
+    return payload.role;
+  } catch {
+    return null;
+  }
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(
@@ -40,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     let cancelled = false;
+    setIsLoading(true); // ensure ProtectedRoute shows spinner while /me is in flight
 
     const fetchUser = async () => {
       try {
@@ -66,24 +78,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [token]);
 
-  const login = useCallback(
-    (
-      newToken: string,
-      baseUser: { _id: string; name: string; role: IUser["role"] },
-    ) => {
-      localStorage.setItem("token", newToken);
-      setToken(newToken);
-      // The /me effect will fetch the full user; in the meantime we can show the base info
-      setUser(baseUser as IUser);
-    },
-    [],
-  );
+  // Only store the token; the useEffect above will fetch the full user from /me.
+  // This avoids rendering with a partial/stub user object.
+  const login = useCallback((newToken: string) => {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem("token");
-    localStorage.removeItem("user"); // no longer needed but keep cleanup
     setToken(null);
     setUser(null);
+    setIsLoading(false);
   }, []);
 
   return (
