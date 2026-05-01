@@ -1,13 +1,13 @@
 // src/modules/orders/orders.routes.ts
 import { Router } from "express";
-import {
-  createOrder,
-  getOrders,
-  getOrderById,
-  updateOrderStatus,
-} from "./orders.controller.js";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/rbac.middleware.js";
+import {
+  createOrder,
+  getOrderById,
+  getOrders,
+  updateOrderStatus,
+} from "./orders.controller.js";
 
 const router = Router();
 
@@ -26,7 +26,7 @@ router.get("/", getOrders);
  * @desc    Place a new consumer order targeting a pharmacy
  * @access  🟢 public_user only
  */
-router.post("/", authorizeRoles("public_user"), createOrder);
+router.post("/", authorizeRoles(["public_user"]), createOrder);
 
 /**
  * @route   GET /api/orders/:id
@@ -42,7 +42,7 @@ router.get("/:id", getOrderById);
  */
 router.patch(
   "/:id/status",
-  authorizeRoles("pharmacy_manager", "admin"),
+  authorizeRoles(["pharmacy_manager", "admin"]),
   updateOrderStatus,
 );
 

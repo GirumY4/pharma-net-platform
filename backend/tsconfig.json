@@ -22,12 +22,12 @@
     "forceConsistentCasingInFileNames": true,
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
-    // "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": true,
     "incremental": true,
-    "tsBuildInfoFile": "./.tsbuildinfo",
+
     // Style Options
     // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
+    "noImplicitOverride": true,
     // "noUnusedLocals": true,
     // "noUnusedParameters": true,
     // "noFallthroughCasesInSwitch": true,
@@ -36,7 +36,7 @@
     "strict": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
+    //"noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true
   },

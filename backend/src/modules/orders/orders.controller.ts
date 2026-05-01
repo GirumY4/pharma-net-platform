@@ -1,15 +1,15 @@
 // src/modules/orders/orders.controller.ts
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import mongoose, { type ClientSession } from "mongoose";
+import { logAction } from "../../utils/auditLogger.js";
 import Order from "./orders.model.js";
 import {
-  processOrderPlacement,
   processOrderApproval,
+  processOrderPlacement,
   processOrderStatusUpdate,
   type PlaceOrderPayload,
   type UpdateOrderStatusPayload,
 } from "./orders.service.js";
-import { logAction } from "../../utils/auditLogger.js";
 
 /**
  * Sanitize Mongoose documents for API responses – removes internal fields.
@@ -138,6 +138,19 @@ export const updateOrderStatus = async (
       error.code = "MISSING_STATUS";
       throw error;
     }
+    // Validate req.params.id is a string and valid ObjectId
+    const orderId = req.params.id;
+    if (
+      typeof orderId !== "string" ||
+      !mongoose.Types.ObjectId.isValid(orderId)
+    ) {
+      const error = new Error(
+        "VALIDATION_ERROR: Invalid orderId format.",
+      ) as any;
+      error.statusCode = 400;
+      error.code = "INVALID_OBJECT_ID";
+      throw error;
+    }
 
     let order;
     let oldOrderData: any = null;
@@ -145,7 +158,7 @@ export const updateOrderStatus = async (
     if (status === "approved") {
       // Atomic approval with stock deduction
       order = await processOrderApproval(
-        req.params.id,
+        orderId,
         pharmacyId,
         managerId,
         session,
@@ -153,8 +166,9 @@ export const updateOrderStatus = async (
     } else {
       // Generic status update (reject, processing, ready, delivered)
       oldOrderData = await Order.findOne({
-        _id: req.params.id,
+        _id: orderId,
         pharmacyId,
+        isDeleted: false,
       }).session(session);
       if (!oldOrderData) {
         const error = new Error(
@@ -165,7 +179,7 @@ export const updateOrderStatus = async (
         throw error;
       }
       order = await processOrderStatusUpdate(
-        req.params.id,
+        orderId,
         pharmacyId,
         managerId,
         { status, rejectionReason, note } as UpdateOrderStatusPayload,
@@ -324,7 +338,7 @@ export const getOrderById = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)) {
       const error = new Error(
         "VALIDATION_ERROR: Invalid orderId format.",
       ) as any;
@@ -333,7 +347,7 @@ export const getOrderById = async (
       throw error;
     }
 
-    const query: Record<string, unknown> = { _id: id, isDeleted: false };
+    const query: any = { _id: id, isDeleted: false };
 
     // 🔒 Role-based access control
     if (req.user?.role === "public_user") {

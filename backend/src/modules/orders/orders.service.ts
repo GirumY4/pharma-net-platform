@@ -156,6 +156,10 @@ export const processOrderPlacement = async (
     { session },
   );
 
+  if (!order) {
+    throw new Error("ORDER_CREATION_FAILED: Failed to create order document.");
+  }
+
   return order;
 };
 
@@ -235,7 +239,7 @@ export const processOrderApproval = async (
     }
 
     // FEFO batch selection: deduct from earliest-expiring batch first (EFDA traceability)
-    const batches = medicineBefore.batches
+    const batches = medicineAfter.batches
       .filter((b: IBatch) => b.quantity > 0)
       .sort(
         (a: IBatch, b: IBatch) =>
@@ -271,6 +275,7 @@ export const processOrderApproval = async (
     }
 
     // Persist batch quantity updates
+    medicineAfter.markModified("batches");
     await medicineAfter.save({ session });
   }
 
