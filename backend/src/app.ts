@@ -1,25 +1,21 @@
 // src/app.ts
-import express, {
-  type Express,
-  type Request,
-  type Response,
-  type NextFunction,
-} from "express";
 import cors from "cors";
-import morgan from "morgan"; // optional – nice for development
-import helmet from "helmet"; // security headers
 import dotenv from "dotenv";
+import express, { type Express, type Request, type Response } from "express";
+import helmet from "helmet"; // security headers
+import morgan from "morgan"; // optional – nice for development
 
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 
 // Import routes (create these folders/files later)
 import authRoutes from "./modules/auth/auth.routes.js";
-import userRoutes from "./modules/users/users.routes.js";
-import medicineRoutes from "./modules/inventory/medicine.routes.js";
 import inventoryTransactionRoutes from "./modules/inventory/inventoryTransaction.routes.js";
+import medicineRoutes from "./modules/inventory/medicine.routes.js";
 import orderRoutes from "./modules/orders/orders.routes.js";
-// ... import other route groups as you implement them
+import paymentRoutes from "./modules/payments/payments.routes.js";
+import reportRoutes from "./modules/reports/reports.routes.js";
+import userRoutes from "./modules/users/users.routes.js";
 
 dotenv.config();
 
@@ -74,8 +70,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/inventory-transactions", inventoryTransactionRoutes);
 app.use("/api/orders", orderRoutes);
-// app.use('/api/payments', paymentRoutes);
-// app.use('/api/reports', reportRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/reports", reportRoutes);
 // app.use('/api/logs', auditRoutes); // admin only
 
 // ─── Error handling ────────────────────────────────────────────────────
