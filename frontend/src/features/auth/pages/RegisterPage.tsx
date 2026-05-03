@@ -1,35 +1,35 @@
 // src/features/auth/pages/RegisterPage.tsx
-import { useState, type SubmitEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Alert,
-  Paper,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  Grid,
-  InputAdornment,
-  IconButton,
-  Divider,
-} from "@mui/material";
-import {
-  Visibility,
-  VisibilityOff,
   Email,
+  LocationCity,
+  LocationOn,
   Lock,
+  Map,
   Person,
   Phone,
-  LocationOn,
-  LocationCity,
-  Map,
+  Visibility,
+  VisibilityOff,
 } from "@mui/icons-material";
+import {
+  Alert,
+  Box,
+  Button,
+  Divider,
+  FormControl,
+  FormHelperText,
+  Grid,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
+import axios from "axios";
+import { useState, type SubmitEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { registerUser } from "../services/authApi";
 
 export const RegisterPage = () => {
@@ -144,7 +144,7 @@ export const RegisterPage = () => {
               />
             </svg>
           </Box>
-          <Typography variant="h5" fontWeight="700" gutterBottom>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: "700" }}>
             Welcome to Pharma-Net!
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -159,10 +159,7 @@ export const RegisterPage = () => {
     <Grid container sx={{ minHeight: "100vh" }}>
       {/* Left side - Branding & Information */}
       <Grid
-        item
-        xs={12}
-        md={4}
-        lg={5}
+        size={{ xs: 12, md: 4, lg: 5 }}
         sx={{
           backgroundColor: "primary.dark",
           color: "primary.contrastText",
@@ -205,22 +202,23 @@ export const RegisterPage = () => {
                 strokeLinecap="round"
               />
             </svg>
-            <Typography variant="h4" fontWeight="800" letterSpacing="-0.5px">
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: "800", letterSpacing: "-0.5px" }}
+            >
               Pharma-Net
             </Typography>
           </Box>
 
           <Typography
             variant="h3"
-            fontWeight="700"
-            sx={{ mb: 3, lineHeight: 1.2 }}
+            sx={{ mb: 3, lineHeight: 1.2, fontWeight: "700" }}
           >
             Join the Network
           </Typography>
           <Typography
             variant="h6"
-            fontWeight="400"
-            sx={{ opacity: 0.8, mb: 4, lineHeight: 1.6 }}
+            sx={{ opacity: 0.8, mb: 4, lineHeight: 1.6, fontWeight: "400" }}
           >
             Whether you are managing a pharmacy or searching for vital
             medicines, Pharma-Net connects you to what matters most.
@@ -230,8 +228,8 @@ export const RegisterPage = () => {
             <Box>
               <Typography
                 variant="subtitle1"
-                fontWeight="700"
                 color="primary.light"
+                sx={{ fontWeight: "700" }}
               >
                 For Pharmacy Managers
               </Typography>
@@ -243,8 +241,8 @@ export const RegisterPage = () => {
             <Box>
               <Typography
                 variant="subtitle1"
-                fontWeight="700"
                 color="primary.light"
+                sx={{ fontWeight: "700" }}
               >
                 For Patients
               </Typography>
@@ -259,10 +257,7 @@ export const RegisterPage = () => {
 
       {/* Right side - Registration Form */}
       <Grid
-        item
-        xs={12}
-        md={8}
-        lg={7}
+        size={{ xs: 12, md: 8, lg: 7 }}
         sx={{
           backgroundColor: "background.default",
           display: "flex",
@@ -305,12 +300,17 @@ export const RegisterPage = () => {
                 strokeLinecap="round"
               />
             </svg>
-            <Typography variant="h6" fontWeight="800">
+            <Typography variant="h6" sx={{ fontWeight: "800" }}>
               Pharma-Net
             </Typography>
           </Box>
 
-          <Typography variant="h5" component="h2" fontWeight="700" gutterBottom>
+          <Typography
+            variant="h5"
+            component="h2"
+            gutterBottom
+            sx={{ fontWeight: "700" }}
+          >
             Create an account
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
@@ -347,7 +347,7 @@ export const RegisterPage = () => {
             </FormControl>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Full Name"
                   fullWidth
@@ -356,16 +356,18 @@ export const RegisterPage = () => {
                   onChange={(e) => setName(e.target.value)}
                   required
                   disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Person color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Person color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Email Address"
                   type="email"
@@ -375,12 +377,14 @@ export const RegisterPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Email color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Email color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
               </Grid>
@@ -396,23 +400,25 @@ export const RegisterPage = () => {
               required
               disabled={loading}
               helperText="Minimum 8 characters"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      size="small"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock color="action" fontSize="small" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
               }}
               sx={{ mb: 1 }}
             />
@@ -421,15 +427,15 @@ export const RegisterPage = () => {
 
             <Typography
               variant="subtitle2"
-              fontWeight="600"
               color="text.secondary"
               gutterBottom
+              sx={{ fontWeight: "600" }}
             >
               Contact & Location Details
             </Typography>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Phone Number"
                   fullWidth
@@ -438,16 +444,18 @@ export const RegisterPage = () => {
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   required={isPharmacy}
                   disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Phone color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Phone color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="City"
                   fullWidth
@@ -456,12 +464,14 @@ export const RegisterPage = () => {
                   onChange={(e) => setCity(e.target.value)}
                   required={isPharmacy}
                   disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LocationCity color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LocationCity color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
               </Grid>
@@ -477,12 +487,14 @@ export const RegisterPage = () => {
               onChange={(e) => setAddress(e.target.value)}
               required={isPharmacy}
               disabled={loading}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LocationOn color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LocationOn color="action" fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
 
@@ -504,7 +516,7 @@ export const RegisterPage = () => {
                 <Map fontSize="small" /> GPS Coordinates (Optional)
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Latitude"
                     type="number"
@@ -515,7 +527,7 @@ export const RegisterPage = () => {
                     disabled={loading}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Longitude"
                     type="number"

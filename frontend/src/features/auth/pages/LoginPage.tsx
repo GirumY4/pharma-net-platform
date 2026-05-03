@@ -1,21 +1,21 @@
 // src/features/auth/pages/LoginPage.tsx
-import { useState, type SubmitEvent } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
+  Grid,
+  IconButton,
+  InputAdornment,
+  Paper,
   TextField,
   Typography,
-  Alert,
-  Paper,
-  Grid,
-  InputAdornment,
-  IconButton,
 } from "@mui/material";
-import { Visibility, VisibilityOff, Email, Lock } from "@mui/icons-material";
+import axios from "axios";
+import { useState, type SubmitEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { getRoleFromToken, useAuth } from "../../../contexts/AuthContext";
 import { loginUser } from "../services/authApi";
-import { useAuth, getRoleFromToken } from "../../../contexts/AuthContext";
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -74,9 +74,7 @@ export const LoginPage = () => {
     <Grid container sx={{ minHeight: "100vh" }}>
       {/* Left side - Branding & Information */}
       <Grid
-        item
-        xs={12}
-        md={5}
+        size={{ xs: 12, md: 5 }}
         sx={{
           backgroundColor: "primary.dark",
           color: "primary.contrastText",
@@ -121,22 +119,23 @@ export const LoginPage = () => {
                 strokeLinecap="round"
               />
             </svg>
-            <Typography variant="h4" fontWeight="800" letterSpacing="-0.5px">
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: "800", letterSpacing: "-0.5px" }}
+            >
               Pharma-Net
             </Typography>
           </Box>
 
           <Typography
             variant="h3"
-            fontWeight="700"
-            sx={{ mb: 3, lineHeight: 1.2 }}
+            sx={{ mb: 3, lineHeight: 1.2, fontWeight: "700" }}
           >
             The Modern Pharmacy Network
           </Typography>
           <Typography
             variant="h6"
-            fontWeight="400"
-            sx={{ opacity: 0.8, mb: 4, lineHeight: 1.6 }}
+            sx={{ opacity: 0.8, mb: 4, lineHeight: 1.6, fontWeight: "400" }}
           >
             Manage inventory, fulfill orders, and connect with a global
             marketplace of patients—all from one secure platform.
@@ -144,7 +143,11 @@ export const LoginPage = () => {
 
           <Box sx={{ display: "flex", gap: 3, mt: 4 }}>
             <Box>
-              <Typography variant="h4" fontWeight="800" color="primary.light">
+              <Typography
+                variant="h4"
+                color="primary.light"
+                sx={{ fontWeight: "800" }}
+              >
                 10k+
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>
@@ -152,7 +155,11 @@ export const LoginPage = () => {
               </Typography>
             </Box>
             <Box>
-              <Typography variant="h4" fontWeight="800" color="primary.light">
+              <Typography
+                variant="h4"
+                color="primary.light"
+                sx={{ fontWeight: "800" }}
+              >
                 99.9%
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>
@@ -165,9 +172,7 @@ export const LoginPage = () => {
 
       {/* Right side - Login Form */}
       <Grid
-        item
-        xs={12}
-        md={7}
+        size={{ xs: 12, md: 7 }}
         sx={{
           backgroundColor: "background.default",
           display: "flex",
@@ -187,7 +192,12 @@ export const LoginPage = () => {
             borderColor: "divider",
           }}
         >
-          <Typography variant="h5" component="h2" fontWeight="700" gutterBottom>
+          <Typography
+            variant="h5"
+            component="h2"
+            gutterBottom
+            sx={{ fontWeight: "700" }}
+          >
             Welcome back
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -217,41 +227,44 @@ export const LoginPage = () => {
               required
               disabled={loading}
               autoFocus
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email color="action" />
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email color="action" />
+                    </InputAdornment>
+                  ),
+                },
               }}
               sx={{ mb: 2 }}
             />
             <TextField
               label="Password"
               type={showPassword ? "text" : "password"}
-              type="password"
               fullWidth
               margin="normal"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
               }}
               sx={{ mb: 3 }}
             />

@@ -48,12 +48,17 @@ export const theme = createTheme({
             boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
           },
         },
-        containedPrimary: {
-          "&:hover": {
-            backgroundColor: "#00593f",
+      },
+      variants: [
+        {
+          props: { variant: "contained", color: "primary" },
+          style: {
+            "&:hover": {
+              backgroundColor: "#00593f",
+            },
           },
         },
-      },
+      ],
     },
     MuiTextField: {
       styleOverrides: {
