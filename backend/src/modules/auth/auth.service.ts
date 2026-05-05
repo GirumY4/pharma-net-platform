@@ -1,5 +1,6 @@
 // src/modules/auth/auth.service.ts
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import jwt, { type SignOptions } from "jsonwebtoken";
 
 export interface JWTPayload {
@@ -47,4 +48,23 @@ export const generateToken = (userId: string, role: string): string => {
   }
 
   return jwt.sign(payload, secret, { expiresIn } as SignOptions);
+};
+/**
+ * Generate a secure password reset token.
+ * Returns the unhashed token (to send to user) AND the hashed token (to save to DB).
+ */
+export const getResetPasswordToken = () => {
+  // Generate random token
+  const resetToken = crypto.randomBytes(20).toString("hex");
+
+  // Hash the token (to store securely in DB - protects against DB breaches)
+  const resetPasswordTokenHash = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Set expiration to 10 minutes from now
+  const resetPasswordExpire = new Date(Date.now() + 10 * 60 * 1000);
+
+  return { resetToken, resetPasswordTokenHash, resetPasswordExpire };
 };

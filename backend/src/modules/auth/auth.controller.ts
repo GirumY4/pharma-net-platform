@@ -1,12 +1,15 @@
 // src/modules/auth/auth.controller.ts
-import type { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
+import type { NextFunction, Request, Response } from "express";
+import { logAction } from "../../utils/auditLogger.js";
+import { sendEmail } from "../../utils/sendEmail.js";
 import User from "../users/user.model.js";
 import {
-  hashPassword,
   comparePassword,
   generateToken,
+  getResetPasswordToken,
+  hashPassword,
 } from "./auth.service.js";
-import { logAction } from "../../utils/auditLogger.js";
 
 /**
  * POST /api/auth/register
@@ -142,6 +145,143 @@ export const login = async (
           role: user.role,
         },
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/forgot-password
+ * Generates a reset token and sends it via email.
+ */
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const user = await User.findOne({
+      email: req.body.email,
+      isDeleted: false,
+    });
+
+    if (!user) {
+      const error = new Error(
+        "NOT_FOUND: There is no user with that email.",
+      ) as any;
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Get reset token (from service)
+    const { resetToken, resetPasswordTokenHash, resetPasswordExpire } =
+      getResetPasswordToken();
+
+    // Save hashed token and expiry to database
+    user.resetPasswordToken = resetPasswordTokenHash;
+    user.resetPasswordExpire = resetPasswordExpire;
+    await user.save();
+
+    // Create reset url (this points to your React Frontend)
+    const resetUrl = `${req.protocol}://${req.get("host")}/reset-password/${resetToken}`;
+    // In production with a frontend, it would be: `${process.env.FRONTEND_URL}/reset-password/${resetToken}`
+
+    const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Pharma-Net Password Reset Token",
+        message,
+      });
+
+      res
+        .status(200)
+        .json({ success: true, message: "Email sent successfully." });
+    } catch (err) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+
+      const error = new Error("EMAIL_FAILED: Email could not be sent.") as any;
+      error.statusCode = 500;
+      throw error;
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/auth/reset-password/:token
+ * Verifies token, sets new password.
+ */
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    // Get hashed token from the URL parameter to compare against database
+    const rawToken = req.params["token"];
+    if (!rawToken || typeof rawToken !== "string") {
+      const error = new Error("INVALID_TOKEN: No reset token provided.") as any;
+      error.statusCode = 400;
+      throw error;
+    }
+    const resetPasswordTokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: resetPasswordTokenHash,
+      resetPasswordExpire: { $gt: new Date() }, // Ensure token hasn't expired
+    });
+
+    if (!user) {
+      const error = new Error(
+        "INVALID_TOKEN: Invalid or expired token.",
+      ) as any;
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!req.body.password) {
+      const error = new Error(
+        "VALIDATION_ERROR: Please provide a new password.",
+      ) as any;
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Set new password
+    user.passwordHash = await hashPassword(req.body.password);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    // Create new JWT so user is immediately logged in
+    const token = generateToken(user._id.toString(), user.role);
+
+    // Write to Audit Log (Security compliance)
+    // We mock a req.user object just so the auditLogger knows WHO changed the password
+    req.user = {
+      userId: user._id.toString(),
+      role: user.role,
+      ...(user.role === "pharmacy_manager" && {
+        pharmacyId: user._id.toString(),
+      }),
+    };
+    await logAction(req, "UPDATE", "User", user._id.toString(), null, {
+      note: "Password was reset",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully.",
+      data: { token },
     });
   } catch (error) {
     next(error);

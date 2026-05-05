@@ -9,6 +9,7 @@ import { errorHandler } from "./middlewares/error.middleware.js";
 import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 
 // Import routes (create these folders/files later)
+import auditRoutes from "./modules/auditLogs/auditLogs.routes.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import inventoryTransactionRoutes from "./modules/inventory/inventoryTransaction.routes.js";
 import medicineRoutes from "./modules/inventory/medicine.routes.js";
@@ -72,7 +73,7 @@ app.use("/api/inventory-transactions", inventoryTransactionRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reports", reportRoutes);
-// app.use('/api/logs', auditRoutes); // admin only
+app.use("/api/logs", auditRoutes); // admin only
 
 // ─── Error handling ────────────────────────────────────────────────────
 app.use(notFoundHandler); // 404 handler

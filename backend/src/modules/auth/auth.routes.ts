@@ -1,6 +1,11 @@
 // src/modules/auth/auth.routes.ts
 import { Router } from "express";
-import { register, login } from "./auth.controller.js";
+import {
+  forgotPassword,
+  login,
+  register,
+  resetPassword,
+} from "./auth.controller.js";
 
 const router = Router();
 
@@ -9,5 +14,11 @@ router.post("/register", register);
 
 // POST /api/auth/login
 router.post("/login", login);
+
+// POST /api/auth/forgot-password
+router.post("/forgot-password", forgotPassword);
+
+// PUT /api/auth/reset-password/:token
+router.put("/reset-password/:token", resetPassword);
 
 export default router;

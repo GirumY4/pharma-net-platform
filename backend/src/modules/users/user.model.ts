@@ -1,11 +1,13 @@
 // src/modules/users/user.model.ts
-import mongoose, { Schema, Document, Model } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
   email: string;
   passwordHash: string;
   role: "admin" | "pharmacy_manager" | "public_user";
+  resetPasswordToken?: string | undefined;
+  resetPasswordExpire?: Date | undefined;
   phoneNumber?: string;
   address?: string;
   city?: string;
@@ -42,6 +44,8 @@ const userSchema = new Schema<IUser>(
       required: true,
       index: true, // Performance for RBAC queries
     },
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
     phoneNumber: { type: String, trim: true },
     address: { type: String, trim: true },
     city: { type: String, trim: true, index: true }, // Indexed for marketplace city search
