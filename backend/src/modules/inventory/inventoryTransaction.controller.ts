@@ -44,14 +44,36 @@ export const createTransaction = async (
 
   try {
     const userId = req.user?.userId;
-    const pharmacyId = req.user?.pharmacyId; // Always from JWT — never from body
 
-    if (!userId || !pharmacyId) {
+    if (!userId) {
       const err: any = new Error(
-        "VALIDATION_ERROR: Missing authenticated user or tenant context.",
+        "VALIDATION_ERROR: Missing authenticated user context.",
       );
-      err.statusCode = 400;
-      err.code = "MISSING_TENANT_CONTEXT";
+      err.statusCode = 401;
+      err.code = "MISSING_USER_CONTEXT";
+      throw err;
+    }
+
+    // Tenant context: pharmacy_manager from JWT, admin from request body
+    let pharmacyId: string;
+    if (req.user?.role === "pharmacy_manager") {
+      pharmacyId = req.user.pharmacyId!;
+    } else if (req.user?.role === "admin") {
+      pharmacyId = req.body.pharmacyId;
+      if (!pharmacyId) {
+        const err: any = new Error(
+          "VALIDATION_ERROR: pharmacyId is required for admin inventory operations.",
+        );
+        err.statusCode = 400;
+        err.code = "MISSING_TENANT_CONTEXT";
+        throw err;
+      }
+    } else {
+      const err: any = new Error(
+        "FORBIDDEN: Insufficient role to manage inventory transactions.",
+      );
+      err.statusCode = 403;
+      err.code = "INSUFFICIENT_ROLE";
       throw err;
     }
 

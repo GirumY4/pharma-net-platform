@@ -40,14 +40,36 @@ export const createPayment = async (
 
   try {
     const managerId = req.user?.userId;
-    const pharmacyId = req.user?.pharmacyId;
 
-    if (!managerId || !pharmacyId) {
+    if (!managerId) {
       const error = new Error(
-        "VALIDATION_ERROR: Missing tenant context.",
+        "VALIDATION_ERROR: Missing authenticated user context.",
       ) as any;
-      error.statusCode = 400;
-      error.code = "MISSING_TENANT_CONTEXT";
+      error.statusCode = 401;
+      error.code = "MISSING_USER_CONTEXT";
+      throw error;
+    }
+
+    // Tenant context: pharmacy_manager from JWT, admin from request body
+    let pharmacyId: string;
+    if (req.user?.role === "pharmacy_manager") {
+      pharmacyId = req.user.pharmacyId!;
+    } else if (req.user?.role === "admin") {
+      pharmacyId = req.body.pharmacyId;
+      if (!pharmacyId) {
+        const error = new Error(
+          "VALIDATION_ERROR: pharmacyId is required for admin payment operations.",
+        ) as any;
+        error.statusCode = 400;
+        error.code = "MISSING_TENANT_CONTEXT";
+        throw error;
+      }
+    } else {
+      const error = new Error(
+        "FORBIDDEN: Insufficient role to record payments.",
+      ) as any;
+      error.statusCode = 403;
+      error.code = "INSUFFICIENT_ROLE";
       throw error;
     }
 

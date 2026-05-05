@@ -1,6 +1,7 @@
 // src/modules/auth/auth.controller.ts
 import crypto from "crypto";
 import type { NextFunction, Request, Response } from "express";
+import mongoose, { type ClientSession } from "mongoose";
 import { logAction } from "../../utils/auditLogger.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import User from "../users/user.model.js";
@@ -20,6 +21,9 @@ export const register = async (
   res: Response,
   next: NextFunction,
 ) => {
+  const session: ClientSession = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
       name,
@@ -39,7 +43,7 @@ export const register = async (
       throw error;
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).session(session);
     if (existingUser) {
       const error = new Error(
         "EMAIL_EXISTS: User with this email already exists.",
@@ -50,22 +54,48 @@ export const register = async (
 
     const hashedPassword = await hashPassword(password);
 
-    const user = await User.create({
-      name,
-      email,
-      passwordHash: hashedPassword,
-      role,
-      phoneNumber,
-      address,
-      city,
-      location,
-    });
+    const [user] = await User.create(
+      [
+        {
+          name,
+          email,
+          passwordHash: hashedPassword,
+          role,
+          phoneNumber,
+          address,
+          city,
+          location,
+        },
+      ],
+      { session },
+    );
 
-    // Audit log (CREATE action)
-    await logAction(req, "CREATE", "User", user._id.toString(), null, {
-      email: user.email,
+    if (!user) {
+      throw new Error("Failed to create user: insertion returned no document.");
+    }
+
+    // Inject user context for the audit logger (user is not yet authenticated)
+    req.user = {
+      userId: user._id.toString(),
       role: user.role,
-    });
+      ...(user.role === "pharmacy_manager" && {
+        pharmacyId: user._id.toString(),
+      }),
+    };
+
+    // Audit log (CREATE action) — atomic with user creation
+    await logAction(
+      req,
+      "CREATE",
+      "User",
+      user._id.toString(),
+      null,
+      { email: user.email, role: user.role },
+      session,
+    );
+
+    await session.commitTransaction();
+    session.endSession();
 
     // Exact response format required by API_Documentation.md
     res.status(201).json({
@@ -85,6 +115,8 @@ export const register = async (
       },
     });
   } catch (error) {
+    await session.abortTransaction().catch(() => {});
+    session.endSession();
     next(error);
   }
 };
@@ -183,6 +215,19 @@ export const forgotPassword = async (
     user.resetPasswordExpire = resetPasswordExpire;
     await user.save();
 
+    // Audit log: record that a password reset was requested (security traceability)
+    // Inject user context since this endpoint is unauthenticated
+    req.user = {
+      userId: user._id.toString(),
+      role: user.role,
+      ...(user.role === "pharmacy_manager" && {
+        pharmacyId: user._id.toString(),
+      }),
+    };
+    await logAction(req, "UPDATE", "User", user._id.toString(), null, {
+      note: "Password reset requested",
+    });
+
     // Create reset url (this points to your React Frontend)
     const resetUrl = `${req.protocol}://${req.get("host")}/reset-password/${resetToken}`;
     // In production with a frontend, it would be: `${process.env.FRONTEND_URL}/reset-password/${resetToken}`
@@ -222,6 +267,9 @@ export const resetPassword = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
+  const session: ClientSession = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     // Get hashed token from the URL parameter to compare against database
     const rawToken = req.params["token"];
@@ -238,7 +286,7 @@ export const resetPassword = async (
     const user = await User.findOne({
       resetPasswordToken: resetPasswordTokenHash,
       resetPasswordExpire: { $gt: new Date() }, // Ensure token hasn't expired
-    });
+    }).session(session);
 
     if (!user) {
       const error = new Error(
@@ -260,13 +308,13 @@ export const resetPassword = async (
     user.passwordHash = await hashPassword(req.body.password);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
-    await user.save();
+    await user.save({ session });
 
     // Create new JWT so user is immediately logged in
     const token = generateToken(user._id.toString(), user.role);
 
-    // Write to Audit Log (Security compliance)
-    // We mock a req.user object just so the auditLogger knows WHO changed the password
+    // Write to Audit Log (Security compliance) — atomic with password change
+    // Inject user context since this endpoint is unauthenticated
     req.user = {
       userId: user._id.toString(),
       role: user.role,
@@ -274,9 +322,18 @@ export const resetPassword = async (
         pharmacyId: user._id.toString(),
       }),
     };
-    await logAction(req, "UPDATE", "User", user._id.toString(), null, {
-      note: "Password was reset",
-    });
+    await logAction(
+      req,
+      "UPDATE",
+      "User",
+      user._id.toString(),
+      null,
+      { note: "Password was reset" },
+      session,
+    );
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       success: true,
@@ -284,6 +341,8 @@ export const resetPassword = async (
       data: { token },
     });
   } catch (error) {
+    await session.abortTransaction().catch(() => {});
+    session.endSession();
     next(error);
   }
 };
