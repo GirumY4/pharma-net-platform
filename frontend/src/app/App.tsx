@@ -1,13 +1,6 @@
 // src/app/App.tsx
-import { Box, CssBaseline, ThemeProvider, Typography } from "@mui/material";
-import {
-  Navigate,
-  Route,
-  BrowserRouter as Router,
-  Routes,
-} from "react-router-dom";
-import { AuthProvider } from "../contexts/AuthContext";
-import { theme } from "../styles/theme";
+import { Box, Typography } from "@mui/material";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 // Import Auth Pages
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
@@ -40,52 +33,37 @@ const Unauthorized = () => (
 
 export const App = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline /> {/* Normalizes CSS across browsers */}
-      <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route
-              path="/reset-password/:token"
-              element={<ResetPasswordPage />}
-            />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
 
-            {/* Protected Routes (require authentication) */}
-            <Route element={<ProtectedRoute />}>
-              {/* Pharmacy Manager Only */}
-              <Route
-                element={<RoleRoute allowedRoles={["pharmacy_manager"]} />}
-              >
-                <Route path="/dashboard" element={<DashboardPlaceholder />} />
-                {/* Future: /inventory, /orders, /reports */}
-              </Route>
+      {/* Protected Routes (require authentication) */}
+      <Route element={<ProtectedRoute />}>
+        {/* Pharmacy Manager Only */}
+        <Route element={<RoleRoute allowedRoles={["pharmacy_manager"]} />}>
+          <Route path="/dashboard" element={<DashboardPlaceholder />} />
+          {/* Future: /inventory, /orders, /reports */}
+        </Route>
 
-              {/* Admin Only */}
-              <Route element={<RoleRoute allowedRoles={["admin"]} />}>
-                <Route path="/admin" element={<AdminPlaceholder />} />
-              </Route>
+        {/* Admin Only */}
+        <Route element={<RoleRoute allowedRoles={["admin"]} />}>
+          <Route path="/admin" element={<AdminPlaceholder />} />
+        </Route>
 
-              {/* Public User (Patient) Only */}
-              <Route element={<RoleRoute allowedRoles={["public_user"]} />}>
-                <Route
-                  path="/marketplace"
-                  element={<MarketplacePlaceholder />}
-                />
-              </Route>
-            </Route>
+        {/* Public User (Patient) Only */}
+        <Route element={<RoleRoute allowedRoles={["public_user"]} />}>
+          <Route path="/marketplace" element={<MarketplacePlaceholder />} />
+        </Route>
+      </Route>
 
-            {/* Catch‑all 404 */}
-            <Route path="*" element={<Navigate to="/unauthorized" replace />} />
-          </Routes>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+      {/* Catch‑all 404 */}
+      <Route path="*" element={<Navigate to="/unauthorized" replace />} />
+    </Routes>
   );
 };
 

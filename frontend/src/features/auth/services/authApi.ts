@@ -21,7 +21,7 @@ export const registerUser = async (
     payload,
   );
   if (!data.success) {
-    throw new Error((data as any).error?.message || "Registration failed");
+    throw new Error(data.error.message || "Registration failed");
   }
   return data.data;
 };
@@ -38,7 +38,7 @@ export const loginUser = async (
     payload,
   );
   if (!data.success) {
-    throw new Error((data as any).error?.message || "Login failed");
+    throw new Error(data.error.message || "Login failed");
   }
   return data.data;
 };
@@ -54,9 +54,7 @@ export const forgotPassword = async (
     email,
   });
   if (!data.success) {
-    throw new Error(
-      (data as any).error?.message || "Failed to send reset email",
-    );
+    throw new Error(data.error.message || "Failed to send reset email");
   }
   return { message: data.message || "Reset instructions sent." };
 };
@@ -69,12 +67,13 @@ export const resetPassword = async (
   token: string,
   password: string,
 ): Promise<AuthResponseData> => {
+  const payload: ResetPasswordRequest = { password };
   const { data } = await api.put<ApiResponse<AuthResponseData>>(
-    `/auth/reset-password/${token}`,
-    { password } as ResetPasswordRequest,
+    `/auth/reset-password/${encodeURIComponent(token)}`,
+    payload,
   );
   if (!data.success) {
-    throw new Error((data as any).error?.message || "Password reset failed");
+    throw new Error(data.error.message || "Password reset failed");
   }
   return data.data;
 };

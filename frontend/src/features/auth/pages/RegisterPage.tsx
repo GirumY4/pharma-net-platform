@@ -28,11 +28,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 
 import { useNavigate } from "react-router-dom";
-import type { ApiError } from "../../../types";
-import { getErrorMessage } from "../../../utils/errorMapper";
+import { handleApiError } from "../../../utils/errorMapper";
 import { registerUser } from "../services/authApi";
 
 export const RegisterPage = () => {
@@ -73,7 +72,7 @@ export const RegisterPage = () => {
     return () => clearTimeout(timer); // Cleanup timer on unmount
   }, [success, countdown, navigate]);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -103,8 +102,8 @@ export const RegisterPage = () => {
       });
       // Trigger success UI instead of immediate navigation
       setSuccess(true);
-    } catch (err: any) {
-      setError(getErrorMessage(err as ApiError));
+    } catch (err: unknown) {
+      setError(handleApiError(err));
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 // src/utils/errorMapper.ts
-import type { ApiError } from "../types";
+import axios from "axios";
+import type { ApiError, ErrorResponse } from "../types";
 
 /**
  * Map backend error codes to user‑friendly, localized messages.
@@ -41,4 +42,30 @@ export const getFieldErrors = (error: ApiError): Record<string, string> => {
     },
     {} as Record<string, string>,
   );
+};
+
+/**
+ * NEW: The ultimate error handler for your UI components.
+ * Pass the raw error from the catch block here.
+ */
+export const handleApiError = (err: unknown): string => {
+  // 1. Check if it's an Axios Error
+  if (axios.isAxiosError<ErrorResponse>(err)) {
+    // 2. Check if the backend successfully sent our expected ErrorResponse format
+    if (err.response?.data && err.response.data.error) {
+      return getErrorMessage(err.response.data.error);
+    }
+
+    // 3. Handle network errors (backend is down, no internet, etc.)
+    if (err.code === "ERR_NETWORK") {
+      return "Unable to connect to the server. Please check your internet connection.";
+    }
+  }
+
+  // 4. Fallback for non-Axios errors (e.g., standard JS errors)
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  return ERROR_MESSAGES.UNKNOWN_ERROR;
 };

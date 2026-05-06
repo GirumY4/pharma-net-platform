@@ -12,10 +12,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useState, type FormEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { getRoleFromToken, useAuth } from "../../../contexts/AuthContext";
-import { getErrorMessage } from "../../../utils/errorMapper";
+import { handleApiError } from "../../../utils/errorMapper";
 import { loginUser } from "../services/authApi";
 
 export const LoginPage = () => {
@@ -32,7 +32,7 @@ export const LoginPage = () => {
   // Show success message from registration redirect
   const registrationMessage = (location.state as { message?: string })?.message;
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -55,8 +55,8 @@ export const LoginPage = () => {
         default:
           navigate("/login", { replace: true });
       }
-    } catch (err: any) {
-      setError(getErrorMessage(err));
+    } catch (err: unknown) {
+      setError(handleApiError(err));
     } finally {
       setLoading(false);
     }

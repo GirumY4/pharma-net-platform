@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Grid,
   IconButton,
   InputAdornment,
@@ -11,10 +12,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useState, type FormEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRoleFromToken, useAuth } from "../../../contexts/AuthContext";
-import { getErrorMessage } from "../../../utils/errorMapper";
+import { handleApiError } from "../../../utils/errorMapper";
 import { resetPassword } from "../services/authApi";
 
 export const ResetPasswordPage = () => {
@@ -28,7 +29,7 @@ export const ResetPasswordPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -66,15 +67,8 @@ export const ResetPasswordPage = () => {
         default:
           navigate("/login", { replace: true });
       }
-    } catch (err: any) {
-      // Handle expired/invalid token explicitly
-      if (err.code === "INVALID_TOKEN") {
-        setError(
-          "This password reset link has expired. Please request a new one.",
-        );
-      } else {
-        setError(getErrorMessage(err));
-      }
+    } catch (err: unknown) {
+      setError(handleApiError(err));
     } finally {
       setLoading(false);
     }
@@ -85,32 +79,70 @@ export const ResetPasswordPage = () => {
       container
       sx={{
         minHeight: "100vh",
-        backgroundColor: "background.default",
+        background:
+          "linear-gradient(135deg, #F7FAF9 0%, #EEF5F2 46%, #F9FAFB 100%)",
         alignItems: "center",
         justifyContent: "center",
-        p: 2,
+        p: { xs: 2.5, sm: 4 },
       }}
     >
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 4, md: 6 },
+          p: { xs: 3, sm: 4.5, md: 5 },
           width: "100%",
-          maxWidth: 480,
-          borderRadius: 3,
+          maxWidth: 464,
+          borderRadius: 4,
           border: "1px solid",
-          borderColor: "divider",
+          borderColor: "rgba(255, 255, 255, 0.72)",
+          backgroundColor: "rgba(255, 255, 255, 0.82)",
+          backdropFilter: "blur(18px)",
+          boxShadow: "0 24px 70px rgba(0, 30, 43, 0.12)",
         }}
       >
+        <Box sx={{ mb: 3 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              display: "grid",
+              placeItems: "center",
+              mb: 3,
+              backgroundColor: "rgba(0, 104, 74, 0.1)",
+              color: "primary.main",
+            }}
+          >
+            <Lock />
+          </Box>
+          <Typography
+            variant="overline"
+            sx={{
+              color: "primary.main",
+              fontWeight: 700,
+              letterSpacing: 0.8,
+            }}
+          >
+            Secure access
+          </Typography>
+        </Box>
         <Typography
-          variant="h5"
+          variant="h4"
           component="h2"
-          gutterBottom
-          sx={{ fontWeight: "700" }}
+          sx={{
+            mb: 1.5,
+            fontWeight: 800,
+            letterSpacing: 0,
+            color: "text.primary",
+          }}
         >
           Set New Password
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ mb: 4, lineHeight: 1.7 }}
+        >
           Please enter your new password below.
         </Typography>
 
@@ -124,6 +156,7 @@ export const ResetPasswordPage = () => {
           <TextField
             label="New Password"
             type={showPassword ? "text" : "password"}
+            variant="outlined"
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -142,6 +175,10 @@ export const ResetPasswordPage = () => {
                     <IconButton
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
+                      disabled={loading}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -154,6 +191,7 @@ export const ResetPasswordPage = () => {
           <TextField
             label="Confirm New Password"
             type={showPassword ? "text" : "password"}
+            variant="outlined"
             fullWidth
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -178,9 +216,23 @@ export const ResetPasswordPage = () => {
             fullWidth
             size="large"
             disabled={loading}
-            sx={{ py: 1.5, fontSize: "1.05rem", borderRadius: 2 }}
+            sx={{
+              py: 1.45,
+              fontSize: "1rem",
+              borderRadius: 2,
+              backgroundColor: "primary.main",
+              boxShadow: "0 12px 24px rgba(0, 104, 74, 0.22)",
+              "&:hover": {
+                backgroundColor: "#00593f",
+                boxShadow: "0 16px 30px rgba(0, 104, 74, 0.28)",
+              },
+            }}
           >
-            {loading ? "Resetting..." : "Reset Password"}
+            {loading ? (
+              <CircularProgress size={22} color="inherit" />
+            ) : (
+              "Reset Password"
+            )}
           </Button>
         </Box>
       </Paper>
