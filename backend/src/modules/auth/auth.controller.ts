@@ -228,11 +228,11 @@ export const forgotPassword = async (
       note: "Password reset requested",
     });
 
-    // Create reset url (this points to your React Frontend)
-    const resetUrl = `${req.protocol}://${req.get("host")}/reset-password/${resetToken}`;
-    // In production with a frontend, it would be: `${process.env.FRONTEND_URL}/reset-password/${resetToken}`
+    const frontendUrl =
+      process.env.FRONTEND_URL || req.get("origin") || "http://localhost:5173";
+    const resetUrl = `${frontendUrl.replace(/\/$/, "")}/reset-password/${encodeURIComponent(resetToken)}`;
 
-    const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+    const message = `You are receiving this email because you (or someone else) requested a password reset. Open this link to set a new password:\n\n${resetUrl}`;
 
     try {
       await sendEmail({
@@ -267,9 +267,6 @@ export const resetPassword = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const session: ClientSession = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     // Get hashed token from the URL parameter to compare against database
     const rawToken = req.params["token"];
@@ -286,7 +283,7 @@ export const resetPassword = async (
     const user = await User.findOne({
       resetPasswordToken: resetPasswordTokenHash,
       resetPasswordExpire: { $gt: new Date() }, // Ensure token hasn't expired
-    }).session(session);
+    });
 
     if (!user) {
       const error = new Error(
@@ -308,7 +305,7 @@ export const resetPassword = async (
     user.passwordHash = await hashPassword(req.body.password);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
-    await user.save({ session });
+    await user.save();
 
     // Create new JWT so user is immediately logged in
     const token = generateToken(user._id.toString(), user.role);
@@ -329,11 +326,7 @@ export const resetPassword = async (
       user._id.toString(),
       null,
       { note: "Password was reset" },
-      session,
     );
-
-    await session.commitTransaction();
-    session.endSession();
 
     res.status(200).json({
       success: true,
@@ -341,8 +334,6 @@ export const resetPassword = async (
       data: { token },
     });
   } catch (error) {
-    await session.abortTransaction().catch(() => {});
-    session.endSession();
     next(error);
   }
 };

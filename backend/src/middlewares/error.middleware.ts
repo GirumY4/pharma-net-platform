@@ -21,13 +21,18 @@ export const errorHandler = (
   if (res.headersSent) return next(err);
 
   const statusCode = err.statusCode ?? err.status ?? 500;
+  const parsedError = err.message.match(/^([A-Z_]+):\s*(.+)$/);
+  const code =
+    parsedError?.[1] ??
+    (statusCode === 500 ? 'INTERNAL_SERVER_ERROR' : err.name || 'ERROR');
+  const message = parsedError?.[2] ?? err.message ?? 'Internal Server Error';
 
   res.status(statusCode).json({
     success: false,
     status: statusCode,
     error: {
-      code: statusCode === 500 ? 'INTERNAL_SERVER_ERROR' : err.name || 'ERROR',
-      message: err.message || 'Internal Server Error',
+      code,
+      message,
     },
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });

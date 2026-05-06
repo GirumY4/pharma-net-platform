@@ -29,7 +29,7 @@ app.use(helmet());
 
 // CORS – very restrictive in production
 const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",")
+  ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
   : ["http://localhost:5173", "http://localhost:3000"];
 
 app.use(
@@ -42,7 +42,7 @@ app.use(
       }
     },
     credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
