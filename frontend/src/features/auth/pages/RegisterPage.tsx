@@ -1,5 +1,6 @@
 // src/features/auth/pages/RegisterPage.tsx
 import {
+  AccessTime,
   Email,
   LocationCity,
   LocationOn,
@@ -27,9 +28,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import axios from "axios";
-import { useState, type SubmitEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+
 import { useNavigate } from "react-router-dom";
+import type { ApiError } from "../../../types";
+import { getErrorMessage } from "../../../utils/errorMapper";
 import { registerUser } from "../services/authApi";
 
 export const RegisterPage = () => {
@@ -48,29 +51,47 @@ export const RegisterPage = () => {
   const [lng, setLng] = useState("");
 
   // UI state
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(3); // Countdown state
 
   // Role‑based field requirements
   const isPharmacy = role === "pharmacy_manager";
 
-  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
+  // Handle countdown effect when success is true
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (success && countdown > 0) {
+      timer = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
+    } else if (success && countdown === 0) {
+      navigate("/login", {
+        state: { message: "Registration successful. Please sign in." },
+        replace: true,
+      });
+    }
+    return () => clearTimeout(timer); // Cleanup timer on unmount
+  }, [success, countdown, navigate]);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
 
     let location: { lat: number; lng: number } | undefined;
     if (lat && lng) {
       const latNum = parseFloat(lat);
       const lngNum = parseFloat(lng);
-      if (!isNaN(latNum) && !isNaN(lngNum)) {
-        location = { lat: latNum, lng: lngNum };
+      if (isNaN(latNum) || isNaN(lngNum)) {
+        setError("GPS coordinates must be valid numbers.");
+        setLoading(false);
+        return;
       }
+      location = { lat: latNum, lng: lngNum };
     }
 
     try {
-      const response = await registerUser({
+      await registerUser({
         name,
         email,
         password,
@@ -80,28 +101,21 @@ export const RegisterPage = () => {
         city: city || undefined,
         location,
       });
-
-      if (response.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate("/login", {
-            state: { message: "Registration successful. Please sign in." },
-          });
-        }, 2000);
-      }
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response) {
-        const apiError = (err.response.data as { error?: { message?: string } })
-          ?.error;
-        setError(
-          apiError?.message || "Registration failed. Please check your inputs.",
-        );
-      } else {
-        setError("A network error occurred. Please try again.");
-      }
+      // Trigger success UI instead of immediate navigation
+      setSuccess(true);
+    } catch (err: any) {
+      setError(getErrorMessage(err as ApiError));
     } finally {
       setLoading(false);
     }
+  };
+
+  // Immediate manual navigation handler
+  const handleManualRedirect = () => {
+    navigate("/login", {
+      state: { message: "Registration successful. Please sign in." },
+      replace: true,
+    });
   };
 
   if (success) {
@@ -138,18 +152,36 @@ export const RegisterPage = () => {
               <path
                 d="M20 32l8 8 16-16"
                 stroke="#00684A"
-                strokeWidth="4"
+                strokeWidth="5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
           </Box>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: "700" }}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: "800" }}>
             Welcome to Pharma-Net!
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Your account has been created successfully. Redirecting to login...
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            Your account has been created successfully. You are being redirected
+            to the login page so you can sign in.
           </Typography>
+
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            size="large"
+            onClick={handleManualRedirect}
+            startIcon={<AccessTime />}
+            sx={{
+              py: 1.5,
+              fontSize: "1.05rem",
+              borderRadius: 2,
+              textTransform: "none",
+            }}
+          >
+            Redirecting in {countdown}s... (Click to skip)
+          </Button>
         </Paper>
       </Grid>
     );

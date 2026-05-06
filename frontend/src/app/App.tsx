@@ -1,32 +1,41 @@
 // src/app/App.tsx
+import { Box, CssBaseline, ThemeProvider, Typography } from "@mui/material";
 import {
+  Navigate,
+  Route,
   BrowserRouter as Router,
   Routes,
-  Route,
-  Navigate,
 } from "react-router-dom";
-import { ThemeProvider, CssBaseline } from "@mui/material";
-import { theme } from "../styles/theme";
 import { AuthProvider } from "../contexts/AuthContext";
+import { theme } from "../styles/theme";
 
 // Import Auth Pages
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
+import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
 
 // Import Route Guards
 import { ProtectedRoute } from "../routes/ProtectedRoute";
 import { RoleRoute } from "../routes/RoleRoute";
 
-// Temporary Placeholder Components (We will build these in the next features)
+// Placeholders (to be replaced with real feature pages)
 const DashboardPlaceholder = () => (
-  <div>Pharmacy Manager Dashboard (Building Next)</div>
+  <Box sx={{ p: 4 }}>Pharmacy Manager Dashboard</Box>
 );
 const MarketplacePlaceholder = () => (
-  <div>Public Marketplace (External/Placeholder)</div>
+  <Box sx={{ p: 4 }}>Public Marketplace</Box>
 );
-const AdminPlaceholder = () => <div>System Admin Console</div>;
+const AdminPlaceholder = () => <Box sx={{ p: 4 }}>System Admin Console</Box>;
 const Unauthorized = () => (
-  <div>403: You do not have permission to view this page.</div>
+  <Box sx={{ p: 4, textAlign: "center" }}>
+    <Typography variant="h5" color="error">
+      403: Access Denied
+    </Typography>
+    <Typography variant="body1" sx={{ mt: 2 }}>
+      You do not have permission to view this page.
+    </Typography>
+  </Box>
 );
 
 export const App = () => {
@@ -39,27 +48,30 @@ export const App = () => {
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route
+              path="/reset-password/:token"
+              element={<ResetPasswordPage />}
+            />
             <Route path="/unauthorized" element={<Unauthorized />} />
-
-            {/* Redirect root to login for now */}
             <Route path="/" element={<Navigate to="/login" replace />} />
 
-            {/* Protected Routes (Must be logged in) */}
+            {/* Protected Routes (require authentication) */}
             <Route element={<ProtectedRoute />}>
-              {/* Pharmacy Manager Only Routes */}
+              {/* Pharmacy Manager Only */}
               <Route
                 element={<RoleRoute allowedRoles={["pharmacy_manager"]} />}
               >
                 <Route path="/dashboard" element={<DashboardPlaceholder />} />
-                {/* Future routes: /inventory, /orders, /reports */}
+                {/* Future: /inventory, /orders, /reports */}
               </Route>
 
-              {/* System Admin Only Routes */}
+              {/* Admin Only */}
               <Route element={<RoleRoute allowedRoles={["admin"]} />}>
                 <Route path="/admin" element={<AdminPlaceholder />} />
               </Route>
 
-              {/* Public User (Patient) Only Routes */}
+              {/* Public User (Patient) Only */}
               <Route element={<RoleRoute allowedRoles={["public_user"]} />}>
                 <Route
                   path="/marketplace"
@@ -67,6 +79,9 @@ export const App = () => {
                 />
               </Route>
             </Route>
+
+            {/* Catch‑all 404 */}
+            <Route path="*" element={<Navigate to="/unauthorized" replace />} />
           </Routes>
         </Router>
       </AuthProvider>

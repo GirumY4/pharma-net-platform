@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Grid,
   IconButton,
   InputAdornment,
@@ -11,17 +12,17 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import axios from "axios";
-import { useState, type SubmitEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { getRoleFromToken, useAuth } from "../../../contexts/AuthContext";
+import { getErrorMessage } from "../../../utils/errorMapper";
 import { loginUser } from "../services/authApi";
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -29,42 +30,33 @@ export const LoginPage = () => {
   const { login } = useAuth();
 
   // Show success message from registration redirect
-  const registrationMessage =
-    (location.state as { message?: string })?.message || "";
+  const registrationMessage = (location.state as { message?: string })?.message;
 
-  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
 
     try {
       const response = await loginUser({ email, password });
+      login(response.token, response.user);
 
-      if (response.success) {
-        login(response.data.token);
-        const role = getRoleFromToken(response.data.token);
-        switch (role) {
-          case "admin":
-            navigate("/admin");
-            break;
-          case "pharmacy_manager":
-            navigate("/dashboard");
-            break;
-          case "public_user":
-            navigate("/marketplace");
-            break;
-        }
+      const role = getRoleFromToken(response.token);
+      switch (role) {
+        case "admin":
+          navigate("/admin", { replace: true });
+          break;
+        case "pharmacy_manager":
+          navigate("/dashboard", { replace: true });
+          break;
+        case "public_user":
+          navigate("/marketplace", { replace: true });
+          break;
+        default:
+          navigate("/login", { replace: true });
       }
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response) {
-        const apiError = (err.response.data as { error?: { message?: string } })
-          ?.error;
-        setError(
-          apiError?.message || "Login failed. Please check your credentials.",
-        );
-      } else {
-        setError("A network error occurred. Please try again.");
-      }
+    } catch (err: any) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -216,7 +208,7 @@ export const LoginPage = () => {
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit} noValidate>
             <TextField
               label="Email Address"
               type="email"
@@ -259,6 +251,7 @@ export const LoginPage = () => {
                       <IconButton
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
+                        disabled={loading}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -268,7 +261,15 @@ export const LoginPage = () => {
               }}
               sx={{ mb: 3 }}
             />
-
+            <Button
+              component={RouterLink}
+              to="/forgot-password"
+              variant="text"
+              sx={{ mb: 3, p: 0, minWidth: "auto", fontWeight: 600 }}
+              disabled={loading}
+            >
+              Forgot password?
+            </Button>
             <Button
               type="submit"
               variant="contained"
@@ -284,15 +285,20 @@ export const LoginPage = () => {
                 borderRadius: 2,
               }}
             >
-              {loading ? "Authenticating..." : "Sign In"}
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Sign In"
+              )}
             </Button>
 
             <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary">
                 Don't have an account?{" "}
                 <Button
+                  component={RouterLink}
+                  to="/register"
                   variant="text"
-                  onClick={() => navigate("/register")}
                   disabled={loading}
                   sx={{
                     p: 0,

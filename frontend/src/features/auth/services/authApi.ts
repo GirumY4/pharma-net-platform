@@ -1,47 +1,80 @@
 // src/features/auth/services/authApi.ts
 import api from "../../../services/api";
-import type { ApiResponse, AuthResponse, IUser } from "../../../types";
-
-interface RegisterPayload {
-  name: string;
-  email: string;
-  password: string;
-  role: "pharmacy_manager" | "public_user"; // admin is not self‑registered
-  phoneNumber?: string;
-  address?: string;
-  city?: string;
-  location?: { lat: number; lng: number };
-}
-
-interface LoginPayload {
-  email: string;
-  password: string;
-}
+import type {
+  ApiResponse,
+  AuthResponseData,
+  IUser,
+  LoginRequest,
+  RegisterRequest,
+  ResetPasswordRequest,
+} from "../../../types";
 
 /**
  * Register a new user.
- * Backend returns 201 with the full user object (except passwordHash).
+ * Backend: POST /api/auth/register → 201 Created
  */
 export const registerUser = async (
-  payload: RegisterPayload,
-): Promise<ApiResponse<IUser>> => {
+  payload: RegisterRequest,
+): Promise<IUser> => {
   const { data } = await api.post<ApiResponse<IUser>>(
     "/auth/register",
     payload,
   );
-  return data;
+  if (!data.success) {
+    throw new Error((data as any).error?.message || "Registration failed");
+  }
+  return data.data;
 };
 
 /**
  * Login with email/password.
- * Backend returns 200 with token, expiration, and basic user info.
+ * Backend: POST /api/auth/login → 200 OK
  */
 export const loginUser = async (
-  payload: LoginPayload,
-): Promise<ApiResponse<AuthResponse>> => {
-  const { data } = await api.post<ApiResponse<AuthResponse>>(
+  payload: LoginRequest,
+): Promise<AuthResponseData> => {
+  const { data } = await api.post<ApiResponse<AuthResponseData>>(
     "/auth/login",
     payload,
   );
-  return data;
+  if (!data.success) {
+    throw new Error((data as any).error?.message || "Login failed");
+  }
+  return data.data;
+};
+
+/**
+ * Request password reset email.
+ * Backend: POST /api/auth/forgot-password → 200 OK
+ */
+export const forgotPassword = async (
+  email: string,
+): Promise<{ message: string }> => {
+  const { data } = await api.post<ApiResponse<null>>("/auth/forgot-password", {
+    email,
+  });
+  if (!data.success) {
+    throw new Error(
+      (data as any).error?.message || "Failed to send reset email",
+    );
+  }
+  return { message: data.message || "Reset instructions sent." };
+};
+
+/**
+ * Reset password using token.
+ * Backend: PUT /api/auth/reset-password/:token → 200 OK with new JWT
+ */
+export const resetPassword = async (
+  token: string,
+  password: string,
+): Promise<AuthResponseData> => {
+  const { data } = await api.put<ApiResponse<AuthResponseData>>(
+    `/auth/reset-password/${token}`,
+    { password } as ResetPasswordRequest,
+  );
+  if (!data.success) {
+    throw new Error((data as any).error?.message || "Password reset failed");
+  }
+  return data.data;
 };
