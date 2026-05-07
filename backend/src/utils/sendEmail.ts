@@ -5,6 +5,7 @@ interface EmailOptions {
   email: string;
   subject: string;
   message: string;
+  html?: string;
 }
 
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
@@ -21,6 +22,9 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
       console.log(`To: ${options.email}`);
       console.log(`Subject: ${options.subject}`);
       console.log(`Body:\n${options.message}`);
+      if (options.html) {
+        console.log(`HTML Content: [Present]`);
+      }
       console.log("-----------------------------\n");
       return;
     }
@@ -30,7 +34,8 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     );
   }
 
-  const transporter = nodemailer.createTransport({
+  // Explicitly typing the config to avoid "No overload matches this call" error
+  const transportConfig: any = {
     host: smtpHost,
     port: smtpPort,
     secure: smtpPort === 465,
@@ -43,13 +48,16 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
       user: smtpUser,
       pass: smtpPassword,
     },
-  });
+  };
+
+  const transporter = nodemailer.createTransport(transportConfig);
 
   const message = {
     from: `${fromName} <${fromEmail}>`,
     to: options.email,
     subject: options.subject,
     text: options.message,
+    html: options.html,
   };
 
   await transporter.sendMail(message);

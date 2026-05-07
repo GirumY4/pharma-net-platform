@@ -329,7 +329,7 @@ This is an automated message. Please do not reply directly to this email.`;
 </html>`;
 
     try {
-      const emailOptions: Parameters<typeof sendEmail>[0] & { html: string } = {
+      const emailOptions = {
         email: user.email,
         subject: "Pharma-Net Password Reset Token",
         message: plainTextMessage,
