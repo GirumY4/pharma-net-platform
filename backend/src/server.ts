@@ -1,10 +1,9 @@
 // src/server.ts
+import "./config/env.js";
 import http from "http";
 import mongoose from "mongoose";
 import connectDB from "./config/db.js";
 import app from "./app.js";
-import dotenv from "dotenv";
-dotenv.config();
 
 const PORT = Number(process.env.PORT) || 5000;
 const ENV = process.env.NODE_ENV || "development";

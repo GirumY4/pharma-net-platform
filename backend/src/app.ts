@@ -1,6 +1,6 @@
 // src/app.ts
+import "./config/env.js";
 import cors from "cors";
-import dotenv from "dotenv";
 import express, { type Express, type Request, type Response } from "express";
 import helmet from "helmet"; // security headers
 import morgan from "morgan"; // optional – nice for development
@@ -17,8 +17,6 @@ import orderRoutes from "./modules/orders/orders.routes.js";
 import paymentRoutes from "./modules/payments/payments.routes.js";
 import reportRoutes from "./modules/reports/reports.routes.js";
 import userRoutes from "./modules/users/users.routes.js";
-
-dotenv.config();
 
 const app: Express = express();
 

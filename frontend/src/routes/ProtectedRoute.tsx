@@ -1,7 +1,7 @@
 // src/routes/ProtectedRoute.tsx
 import { Box, CircularProgress } from "@mui/material";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 
 export const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();

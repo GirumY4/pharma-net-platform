@@ -1,13 +1,18 @@
 // src/features/auth/pages/RegisterPage.tsx
 import {
   AccessTime,
+  Business,
+  CheckCircle,
   Email,
+  HealthAndSafetyOutlined,
+  Inventory2Outlined,
   LocationCity,
   LocationOn,
   Lock,
   Map,
   Person,
   Phone,
+  StorefrontOutlined,
   Visibility,
   VisibilityOff,
 } from "@mui/icons-material";
@@ -15,29 +20,59 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Divider,
-  FormControl,
-  FormHelperText,
   Grid,
   IconButton,
   InputAdornment,
-  InputLabel,
   MenuItem,
-  Paper,
-  Select,
   TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useState, type SyntheticEvent } from "react";
-
 import { useNavigate } from "react-router-dom";
+import {
+  AuthFormHeader,
+  AuthShell,
+  AuthSubmitButton,
+} from "../components/AuthShell";
 import { handleApiError } from "../../../utils/errorMapper";
 import { registerUser } from "../services/authApi";
+
+const redirectDelay = 5;
+
+const registerBrand = {
+  eyebrow: "Create your access",
+  title: "Join the network that connects pharmacies and patients.",
+  description:
+    "Choose the account type that matches your role, then build a secure profile for ordering, pharmacy operations, and connected fulfillment.",
+  items: [
+    {
+      icon: <StorefrontOutlined fontSize="small" />,
+      title: "Pharmacy manager accounts",
+      description:
+        "Manage storefront details, inventory context, and fulfillment information from a focused workspace.",
+    },
+    {
+      icon: <HealthAndSafetyOutlined fontSize="small" />,
+      title: "Public user accounts",
+      description:
+        "Search for medicine availability, save delivery details, and place orders with less friction.",
+    },
+    {
+      icon: <Inventory2Outlined fontSize="small" />,
+      title: "Clean operational data",
+      description:
+        "Accurate contact and location fields make discovery and delivery easier for everyone.",
+    },
+  ],
+  footer:
+    "Built to keep account setup clear, accurate, and ready for real pharmacy workflows.",
+};
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
 
-  // Form state
   const [role, setRole] = useState<"pharmacy_manager" | "public_user" | "">("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -49,36 +84,44 @@ export const RegisterPage = () => {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
 
-  // UI state
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(3); // Countdown state
+  const [countdown, setCountdown] = useState(redirectDelay);
 
-  // Role‑based field requirements
   const isPharmacy = role === "pharmacy_manager";
 
-  // Handle countdown effect when success is true
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    if (success && countdown > 0) {
-      timer = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
-    } else if (success && countdown === 0) {
+    if (!success) return;
+
+    if (countdown <= 0) {
       navigate("/login", {
         state: { message: "Registration successful. Please sign in." },
         replace: true,
       });
+      return;
     }
-    return () => clearTimeout(timer); // Cleanup timer on unmount
+
+    const timer = window.setTimeout(
+      () => setCountdown((current) => current - 1),
+      1000,
+    );
+    return () => window.clearTimeout(timer);
   }, [success, countdown, navigate]);
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+
+    if (!role) {
+      setError("Choose the account type that matches your Pharma-Net role.");
+      return;
+    }
+
     setLoading(true);
 
     let location: { lat: number; lng: number } | undefined;
-    if (lat && lng) {
+    if (lat || lng) {
       const latNum = parseFloat(lat);
       const lngNum = parseFloat(lng);
       if (isNaN(latNum) || isNaN(lngNum)) {
@@ -94,13 +137,13 @@ export const RegisterPage = () => {
         name,
         email,
         password,
-        role: role as "pharmacy_manager" | "public_user",
+        role,
         phoneNumber: phoneNumber || undefined,
         address: address || undefined,
         city: city || undefined,
         location,
       });
-      // Trigger success UI instead of immediate navigation
+      setCountdown(redirectDelay);
       setSuccess(true);
     } catch (err: unknown) {
       setError(handleApiError(err));
@@ -109,7 +152,6 @@ export const RegisterPage = () => {
     }
   };
 
-  // Immediate manual navigation handler
   const handleManualRedirect = () => {
     navigate("/login", {
       state: { message: "Registration successful. Please sign in." },
@@ -117,281 +159,127 @@ export const RegisterPage = () => {
     });
   };
 
-  if (success) {
-    return (
-      <Grid
-        container
-        sx={{
-          minHeight: "100vh",
-          backgroundColor: "background.default",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            borderRadius: 3,
-            textAlign: "center",
-            border: "1px solid",
-            borderColor: "divider",
-            maxWidth: 400,
-          }}
-        >
-          <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
-            <svg
-              width="64"
-              height="64"
-              viewBox="0 0 64 64"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="32" cy="32" r="32" fill="#00ED64" fillOpacity="0.2" />
-              <path
-                d="M20 32l8 8 16-16"
-                stroke="#00684A"
-                strokeWidth="5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Box>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: "800" }}>
-            Welcome to Pharma-Net!
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            Your account has been created successfully. You are being redirected
-            to the login page so you can sign in.
-          </Typography>
-
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            size="large"
-            onClick={handleManualRedirect}
-            startIcon={<AccessTime />}
-            sx={{
-              py: 1.5,
-              fontSize: "1.05rem",
-              borderRadius: 2,
-              textTransform: "none",
-            }}
-          >
-            Redirecting in {countdown}s... (Click to skip)
-          </Button>
-        </Paper>
-      </Grid>
-    );
-  }
-
   return (
-    <Grid container sx={{ minHeight: "100vh" }}>
-      {/* Left side - Branding & Information */}
-      <Grid
-        size={{ xs: 12, md: 4, lg: 5 }}
-        sx={{
-          backgroundColor: "primary.dark",
-          color: "primary.contrastText",
-          display: { xs: "none", md: "flex" },
-          flexDirection: "column",
-          justifyContent: "center",
-          p: { xs: 4, md: 8 },
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: -100,
-            left: -100,
-            width: 300,
-            height: 300,
-            borderRadius: "50%",
-            background:
-              "linear-gradient(45deg, rgba(0,237,100,0.1) 0%, rgba(0,104,74,0) 100%)",
-            filter: "blur(40px)",
-          }}
-        />
-
-        <Box sx={{ zIndex: 1, maxWidth: 480 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 6, gap: 1.5 }}>
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 40 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect width="40" height="40" rx="8" fill="#00ED64" />
-              <path
-                d="M12 20h16M20 12v16"
-                stroke="#001E2B"
-                strokeWidth="4"
-                strokeLinecap="round"
-              />
-            </svg>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: "800", letterSpacing: "-0.5px" }}
-            >
-              Pharma-Net
-            </Typography>
-          </Box>
-
-          <Typography
-            variant="h3"
-            sx={{ mb: 3, lineHeight: 1.2, fontWeight: "700" }}
-          >
-            Join the Network
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{ opacity: 0.8, mb: 4, lineHeight: 1.6, fontWeight: "400" }}
-          >
-            Whether you are managing a pharmacy or searching for vital
-            medicines, Pharma-Net connects you to what matters most.
-          </Typography>
-
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 4, mt: 6 }}>
-            <Box>
-              <Typography
-                variant="subtitle1"
-                color="primary.light"
-                sx={{ fontWeight: "700" }}
-              >
-                For Pharmacy Managers
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                Streamline inventory, process orders seamlessly, and grow your
-                customer base.
-              </Typography>
-            </Box>
-            <Box>
-              <Typography
-                variant="subtitle1"
-                color="primary.light"
-                sx={{ fontWeight: "700" }}
-              >
-                For Patients
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                Find availability nearby, place orders instantly, and manage
-                your health efficiently.
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Grid>
-
-      {/* Right side - Registration Form */}
-      <Grid
-        size={{ xs: 12, md: 8, lg: 7 }}
-        sx={{
-          backgroundColor: "background.default",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          p: { xs: 3, sm: 6, md: 8 },
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, sm: 5 },
-            width: "100%",
-            maxWidth: 600,
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: "divider",
-          }}
-        >
+    <AuthShell brand={registerBrand} formMaxWidth={660}>
+      {success ? (
+        <Box sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
           <Box
             sx={{
-              display: { xs: "flex", md: "none" },
-              alignItems: "center",
+              width: 70,
+              height: 70,
+              mx: "auto",
               mb: 3,
-              gap: 1,
+              borderRadius: 2,
+              display: "grid",
+              placeItems: "center",
+              color: "primary.main",
+              background:
+                "linear-gradient(135deg, rgba(15,139,108,0.14) 0%, rgba(221,170,74,0.16) 100%)",
+              border: "1px solid rgba(15,139,108,0.18)",
             }}
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 40 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+            <CheckCircle fontSize="large" />
+          </Box>
+          <Typography variant="overline" sx={{ color: "primary.main" }}>
+            Registration complete
+          </Typography>
+          <Typography variant="h4" component="h2" sx={{ mt: 0.75, mb: 1.5 }}>
+            Your account is ready
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ maxWidth: 460, mx: "auto", mb: 3.5 }}
+          >
+            We created your Pharma-Net profile. You will be redirected to sign
+            in and continue with your new credentials.
+          </Typography>
+
+          <Box
+            sx={{
+              display: "inline-grid",
+              placeItems: "center",
+              position: "relative",
+              width: 92,
+              height: 92,
+              mb: 3.5,
+            }}
+          >
+            <CircularProgress
+              variant="determinate"
+              value={((redirectDelay - countdown) / redirectDelay) * 100}
+              size={92}
+              thickness={3.5}
+              sx={{ color: "primary.main" }}
+            />
+            <Typography
+              variant="h5"
+              sx={{ position: "absolute", fontWeight: 800 }}
             >
-              <rect width="40" height="40" rx="8" fill="#00684A" />
-              <path
-                d="M12 20h16M20 12v16"
-                stroke="#ffffff"
-                strokeWidth="4"
-                strokeLinecap="round"
-              />
-            </svg>
-            <Typography variant="h6" sx={{ fontWeight: "800" }}>
-              Pharma-Net
+              {countdown}s
             </Typography>
           </Box>
 
-          <Typography
-            variant="h5"
-            component="h2"
-            gutterBottom
-            sx={{ fontWeight: "700" }}
+          <AuthSubmitButton
+            type="button"
+            onClick={handleManualRedirect}
+            startIcon={<AccessTime />}
           >
-            Create an account
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-            Please fill in the details below to get started.
-          </Typography>
+            Go to sign in now
+          </AuthSubmitButton>
+        </Box>
+      ) : (
+        <>
+          <AuthFormHeader
+            icon={<Business />}
+            eyebrow="Account setup"
+            title="Create your account"
+            description="Start with the essentials. Pharmacy-specific details help your listing and delivery workflows work correctly."
+          />
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+            <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit}>
-            <FormControl fullWidth margin="normal" required>
-              <InputLabel id="role-label">Account Type</InputLabel>
-              <Select
-                labelId="role-label"
-                value={role}
-                label="Account Type"
-                onChange={(e) =>
-                  setRole(e.target.value as "pharmacy_manager" | "public_user")
-                }
-                disabled={loading}
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="public_user">Public User (Patient)</MenuItem>
-                <MenuItem value="pharmacy_manager">Pharmacy Manager</MenuItem>
-              </Select>
-              <FormHelperText>
-                {isPharmacy
-                  ? "Pharmacy accounts require address and contact info for the marketplace."
-                  : "Patients can search and order medicines."}
-              </FormHelperText>
-            </FormControl>
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <TextField
+              select
+              label="Account type"
+              fullWidth
+              value={role}
+              onChange={(e) =>
+                setRole(e.target.value as "pharmacy_manager" | "public_user")
+              }
+              required
+              disabled={loading}
+              helperText={
+                isPharmacy
+                  ? "Pharmacy accounts use contact and address details for marketplace operations."
+                  : "Public user accounts can search, order, and manage delivery details."
+              }
+              sx={{ mb: 2.5 }}
+            >
+              <MenuItem value="public_user">Public user</MenuItem>
+              <MenuItem value="pharmacy_manager">Pharmacy manager</MenuItem>
+            </TextField>
 
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
-                  label="Full Name"
+                  label="Full name"
                   fullWidth
-                  margin="normal"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
                   disabled={loading}
+                  autoComplete="name"
                   slotProps={{
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Person color="action" fontSize="small" />
+                          <Person fontSize="small" />
                         </InputAdornment>
                       ),
                     },
@@ -400,19 +288,19 @@ export const RegisterPage = () => {
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
-                  label="Email Address"
+                  label="Email address"
                   type="email"
                   fullWidth
-                  margin="normal"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
+                  autoComplete="email"
                   slotProps={{
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email color="action" fontSize="small" />
+                          <Email fontSize="small" />
                         </InputAdornment>
                       ),
                     },
@@ -425,25 +313,29 @@ export const RegisterPage = () => {
               label="Password"
               type={showPassword ? "text" : "password"}
               fullWidth
-              margin="normal"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
-              helperText="Minimum 8 characters"
+              autoComplete="new-password"
+              helperText="Use at least 8 characters."
               slotProps={{
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Lock color="action" fontSize="small" />
+                      <Lock fontSize="small" />
                     </InputAdornment>
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={() => setShowPassword((value) => !value)}
                         edge="end"
                         size="small"
+                        disabled={loading}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -451,35 +343,38 @@ export const RegisterPage = () => {
                   ),
                 },
               }}
-              sx={{ mb: 1 }}
+              sx={{ mt: 2, mb: 2.5 }}
             />
 
             <Divider sx={{ my: 3 }} />
 
             <Typography
               variant="subtitle2"
-              color="text.secondary"
-              gutterBottom
-              sx={{ fontWeight: "600" }}
+              color="text.primary"
+              sx={{ mb: 0.5 }}
             >
-              Contact & Location Details
+              Contact and location
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              These details help match accounts to the right fulfillment and
+              delivery context.
             </Typography>
 
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
-                  label="Phone Number"
+                  label="Phone number"
                   fullWidth
-                  margin="normal"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   required={isPharmacy}
                   disabled={loading}
+                  autoComplete="tel"
                   slotProps={{
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Phone color="action" fontSize="small" />
+                          <Phone fontSize="small" />
                         </InputAdornment>
                       ),
                     },
@@ -490,16 +385,16 @@ export const RegisterPage = () => {
                 <TextField
                   label="City"
                   fullWidth
-                  margin="normal"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   required={isPharmacy}
                   disabled={loading}
+                  autoComplete="address-level2"
                   slotProps={{
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <LocationCity color="action" fontSize="small" />
+                          <LocationCity fontSize="small" />
                         </InputAdornment>
                       ),
                     },
@@ -509,42 +404,40 @@ export const RegisterPage = () => {
             </Grid>
 
             <TextField
-              label={
-                isPharmacy ? "Pharmacy Address" : "Default Delivery Address"
-              }
+              label={isPharmacy ? "Pharmacy address" : "Delivery address"}
               fullWidth
-              margin="normal"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               required={isPharmacy}
               disabled={loading}
+              autoComplete="street-address"
               slotProps={{
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LocationOn color="action" fontSize="small" />
+                      <LocationOn fontSize="small" />
                     </InputAdornment>
                   ),
                 },
               }}
+              sx={{ mt: 2 }}
             />
 
             <Box
               sx={{
-                mt: 2,
+                mt: 2.5,
                 p: 2,
-                bgcolor: "background.default",
                 borderRadius: 2,
-                border: "1px dashed",
-                borderColor: "divider",
+                border: "1px dashed rgba(23,35,31,0.18)",
+                backgroundColor: "rgba(247,250,249,0.74)",
               }}
             >
               <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "flex", alignItems: "center", mb: 1, gap: 0.5 }}
+                variant="subtitle2"
+                sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 2 }}
               >
-                <Map fontSize="small" /> GPS Coordinates (Optional)
+                <Map fontSize="small" />
+                GPS coordinates
               </Typography>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -556,6 +449,15 @@ export const RegisterPage = () => {
                     value={lat}
                     onChange={(e) => setLat(e.target.value)}
                     disabled={loading}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Map fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -567,54 +469,46 @@ export const RegisterPage = () => {
                     value={lng}
                     onChange={(e) => setLng(e.target.value)}
                     disabled={loading}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Map fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
                   />
                 </Grid>
               </Grid>
             </Box>
 
-            <Button
+            <AuthSubmitButton
               type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              size="large"
-              disabled={loading || role === ""}
-              sx={{
-                mt: 4,
-                mb: 2,
-                py: 1.5,
-                fontSize: "1.05rem",
-                textTransform: "none",
-                borderRadius: 2,
-              }}
+              loading={loading}
+              loadingText="Creating account"
+              disabled={role === ""}
+              sx={{ mt: 3.5 }}
             >
-              {loading ? "Creating account..." : "Create Account"}
-            </Button>
+              Create account
+            </AuthSubmitButton>
 
-            <Box sx={{ textAlign: "center" }}>
+            <Box sx={{ textAlign: "center", mt: 3 }}>
               <Typography variant="body2" color="text.secondary">
-                Already have an account?{" "}
+                Already registered?{" "}
                 <Button
                   variant="text"
                   onClick={() => navigate("/login")}
                   disabled={loading}
-                  sx={{
-                    p: 0,
-                    minWidth: "auto",
-                    fontWeight: 600,
-                    "&:hover": {
-                      backgroundColor: "transparent",
-                      textDecoration: "underline",
-                    },
-                  }}
+                  sx={{ px: 0.25, color: "primary.main", fontWeight: 800 }}
                 >
                   Sign in
                 </Button>
               </Typography>
             </Box>
           </Box>
-        </Paper>
-      </Grid>
-    </Grid>
+        </>
+      )}
+    </AuthShell>
   );
 };

@@ -232,19 +232,118 @@ export const forgotPassword = async (
       process.env.FRONTEND_URL || req.get("origin") || "http://localhost:5173";
     const resetUrl = `${frontendUrl.replace(/\/$/, "")}/reset-password/${encodeURIComponent(resetToken)}`;
 
-    const message = `You are receiving this email because you (or someone else) requested a password reset. Open this link to set a new password:\n\n${resetUrl}`;
+    const escapedUserName = user.name
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+    const escapedResetUrl = resetUrl
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+    const expiresInMinutes = Math.max(
+      1,
+      Math.round((resetPasswordExpire.getTime() - Date.now()) / (60 * 1000)),
+    );
+    const resetLinkExpiryLabel =
+      expiresInMinutes >= 60 && expiresInMinutes % 60 === 0
+        ? `${expiresInMinutes / 60} hour${expiresInMinutes === 60 ? "" : "s"}`
+        : `${expiresInMinutes} minute${expiresInMinutes === 1 ? "" : "s"}`;
+
+    const plainTextMessage = `Hello ${user.name},
+
+We received a request to reset the password for your Pharma-Net account.
+
+Reset your password:
+${resetUrl}
+
+This reset link expires in ${resetLinkExpiryLabel} and can only be used once.
+
+If you did not request this password reset, you can safely ignore this email. Your password will remain unchanged.
+
+Thank you,
+The Pharma-Net Security Team
+
+This is an automated message. Please do not reply directly to this email.`;
+
+    const htmlMessage = `
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset your Pharma-Net password</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#F8FAFC; font-family:'Inter', Arial, sans-serif; color:#001E2B;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC; padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px; background-color:#FFFFFF; border-radius:18px; overflow:hidden; border:1px solid #E5E7EB; box-shadow:0 20px 45px rgba(0, 30, 43, 0.10);">
+            <tr>
+              <td style="background-color:#00684A; padding:34px 36px;">
+                <div style="display:inline-block; width:44px; height:44px; line-height:44px; text-align:center; border-radius:12px; background-color:#00ED64; color:#001E2B; font-size:26px; font-weight:800;">+</div>
+                <div style="margin-top:16px; color:#FFFFFF; font-size:26px; line-height:1.2; font-weight:800;">Pharma-Net</div>
+                <div style="margin-top:6px; color:rgba(255,255,255,0.76); font-size:14px; line-height:1.6;">Secure account recovery</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:38px 36px 18px;">
+                <p style="margin:0 0 12px; color:#00684A; font-size:13px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;">Password reset request</p>
+                <h1 style="margin:0 0 18px; color:#001E2B; font-size:30px; line-height:1.18; font-weight:800;">Reset your password</h1>
+                <p style="margin:0 0 18px; color:#334155; font-size:16px; line-height:1.7;">Hello ${escapedUserName},</p>
+                <p style="margin:0; color:#334155; font-size:16px; line-height:1.7;">We received a request to reset the password for your Pharma-Net account. Use the secure button below to choose a new password.</p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:14px 36px 30px;">
+                <a href="${escapedResetUrl}" style="display:inline-block; background-color:#00ED64; color:#001E2B; padding:15px 28px; border-radius:10px; font-size:16px; line-height:1; font-weight:800; text-decoration:none;">Reset Password</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 36px 30px;">
+                <div style="background-color:#F1F5F9; border-left:4px solid #00684A; border-radius:12px; padding:18px 20px;">
+                  <p style="margin:0 0 8px; color:#001E2B; font-size:15px; line-height:1.6; font-weight:800;">Important security note</p>
+                  <p style="margin:0; color:#475569; font-size:14px; line-height:1.7;">This reset link expires in <strong>${resetLinkExpiryLabel}</strong> and can only be used once. If you did not request this password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 36px 34px;">
+                <p style="margin:0 0 10px; color:#64748B; font-size:13px; line-height:1.7;">If the button does not work, copy and paste this link into your browser:</p>
+                <p style="margin:0; word-break:break-all; color:#00684A; font-size:13px; line-height:1.7;"><a href="${escapedResetUrl}" style="color:#00684A;">${escapedResetUrl}</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color:#F8FAFC; padding:22px 36px; border-top:1px solid #E5E7EB;">
+                <p style="margin:0; color:#64748B; font-size:12px; line-height:1.7;">This is an automated message from the Pharma-Net Security Team. Please do not reply directly to this email.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 
     try {
-      await sendEmail({
+      const emailOptions: Parameters<typeof sendEmail>[0] & { html: string } = {
         email: user.email,
         subject: "Pharma-Net Password Reset Token",
-        message,
-      });
+        message: plainTextMessage,
+        html: htmlMessage,
+      };
+
+      await sendEmail(emailOptions);
 
       res
         .status(200)
         .json({ success: true, message: "Email sent successfully." });
     } catch (err) {
+      console.error("Password reset email failed:", err);
+
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save();
@@ -319,14 +418,9 @@ export const resetPassword = async (
         pharmacyId: user._id.toString(),
       }),
     };
-    await logAction(
-      req,
-      "UPDATE",
-      "User",
-      user._id.toString(),
-      null,
-      { note: "Password was reset" },
-    );
+    await logAction(req, "UPDATE", "User", user._id.toString(), null, {
+      note: "Password was reset",
+    });
 
     res.status(200).json({
       success: true,

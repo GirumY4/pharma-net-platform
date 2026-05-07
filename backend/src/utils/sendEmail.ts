@@ -7,35 +7,50 @@ interface EmailOptions {
   message: string;
 }
 
-export const sendEmail = async (options: EmailOptions) => {
-  // 1. Create a transporter (Using ethereal.email for fake dev emails, or your own SMTP)
-  // For local development, using a generic test setup or simply logging the link is common.
+export const sendEmail = async (options: EmailOptions): Promise<void> => {
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = Number(process.env.SMTP_PORT) || 587;
+  const smtpUser = process.env.SMTP_EMAIL;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+  const fromName = process.env.FROM_NAME || "Pharma-Net Admin";
+  const fromEmail = process.env.FROM_EMAIL || smtpUser;
+
+  if (!smtpHost || !smtpUser || !smtpPassword || !fromEmail) {
+    if (process.env.NODE_ENV !== "production") {
+      console.log("\n--- EMAIL MOCK (Dev Mode) ---");
+      console.log(`To: ${options.email}`);
+      console.log(`Subject: ${options.subject}`);
+      console.log(`Body:\n${options.message}`);
+      console.log("-----------------------------\n");
+      return;
+    }
+
+    throw new Error(
+      "SMTP configuration is incomplete. Check SMTP_HOST, SMTP_EMAIL, SMTP_PASSWORD, and FROM_EMAIL.",
+    );
+  }
+
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.mailtrap.io",
-    port: Number(process.env.SMTP_PORT) || 2525,
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    requireTLS: smtpPort === 587,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
+    family: 4,
     auth: {
-      user: process.env.SMTP_EMAIL || "test_user",
-      pass: process.env.SMTP_PASSWORD || "test_pass",
+      user: smtpUser,
+      pass: smtpPassword,
     },
   });
 
   const message = {
-    from: `${process.env.FROM_NAME || "Pharma-Net Admin"} <${process.env.FROM_EMAIL || "noreply@pharmanet.com"}>`,
+    from: `${fromName} <${fromEmail}>`,
     to: options.email,
     subject: options.subject,
     text: options.message,
   };
-
-  // In a real production app, this sends the email.
-  // For development, if SMTP isn't set up, we will just log the message to the console.
-  if (process.env.NODE_ENV === "development" && !process.env.SMTP_HOST) {
-    console.log("\n--- 📧 EMAIL MOCK (Dev Mode) ---");
-    console.log(`To: ${options.email}`);
-    console.log(`Subject: ${options.subject}`);
-    console.log(`Body:\n${options.message}`);
-    console.log("--------------------------------\n");
-    return;
-  }
 
   await transporter.sendMail(message);
 };

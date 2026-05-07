@@ -1,22 +1,63 @@
 // src/features/auth/pages/LoginPage.tsx
-import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
+import {
+  EmailOutlined,
+  Inventory2Outlined,
+  LocalShippingOutlined,
+  LockOutlined,
+  LoginOutlined,
+  SecurityOutlined,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import {
   Alert,
   Box,
   Button,
-  CircularProgress,
-  Grid,
   IconButton,
   InputAdornment,
-  Paper,
   TextField,
   Typography,
 } from "@mui/material";
 import { useState, type SyntheticEvent } from "react";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
-import { getRoleFromToken, useAuth } from "../../../contexts/AuthContext";
+import {
+  AuthFormHeader,
+  AuthShell,
+  AuthSubmitButton,
+} from "../components/AuthShell";
+import { useAuth } from "../../../contexts/useAuth";
 import { handleApiError } from "../../../utils/errorMapper";
+import { getRoleFromToken } from "../../../utils/authToken";
 import { loginUser } from "../services/authApi";
+
+const loginBrand = {
+  eyebrow: "Secure pharmacy access",
+  title: "Coordinate care, stock, and orders from one trusted place.",
+  description:
+    "Pharma-Net gives pharmacy teams and public users a focused sign-in path into role-aware workflows for inventory, ordering, and patient access.",
+  items: [
+    {
+      icon: <SecurityOutlined fontSize="small" />,
+      title: "Role-aware workspaces",
+      description:
+        "Admins, pharmacy managers, and public users enter the right experience after authentication.",
+    },
+    {
+      icon: <Inventory2Outlined fontSize="small" />,
+      title: "Operational clarity",
+      description:
+        "Inventory and order workflows stay connected so teams can act with less friction.",
+    },
+    {
+      icon: <LocalShippingOutlined fontSize="small" />,
+      title: "Healthcare logistics",
+      description:
+        "Support medicine discovery, fulfillment, and communication from a single platform.",
+    },
+  ],
+  footer:
+    "Use your verified account credentials to continue into your Pharma-Net workspace.",
+};
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -29,8 +70,7 @@ export const LoginPage = () => {
   const location = useLocation();
   const { login } = useAuth();
 
-  // Show success message from registration redirect
-  const registrationMessage = (location.state as { message?: string })?.message;
+  const routeMessage = (location.state as { message?: string } | null)?.message;
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -63,260 +103,113 @@ export const LoginPage = () => {
   };
 
   return (
-    <Grid container sx={{ minHeight: "100vh" }}>
-      {/* Left side - Branding & Information */}
-      <Grid
-        size={{ xs: 12, md: 5 }}
-        sx={{
-          backgroundColor: "primary.dark",
-          color: "primary.contrastText",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          p: { xs: 4, md: 8 },
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Subtle background decoration */}
-        <Box
-          sx={{
-            position: "absolute",
-            top: -100,
-            left: -100,
-            width: 300,
-            height: 300,
-            borderRadius: "50%",
-            background:
-              "linear-gradient(45deg, rgba(0,237,100,0.1) 0%, rgba(0,104,74,0) 100%)",
-            filter: "blur(40px)",
+    <AuthShell brand={loginBrand} formMaxWidth={500}>
+      <AuthFormHeader
+        icon={<LoginOutlined />}
+        eyebrow="Welcome back"
+        title="Sign in to Pharma-Net"
+        description="Enter your credentials to continue to your dashboard, marketplace, or admin console."
+      />
+
+      {routeMessage && !error && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          {routeMessage}
+        </Alert>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <TextField
+          label="Email address"
+          type="email"
+          fullWidth
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          disabled={loading}
+          autoFocus
+          autoComplete="email"
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <EmailOutlined fontSize="small" />
+                </InputAdornment>
+              ),
+            },
           }}
+          sx={{ mb: 2.25 }}
         />
 
-        <Box sx={{ zIndex: 1, maxWidth: 480 }}>
-          {/* Logo Placeholder */}
-          <Box sx={{ display: "flex", alignItems: "center", mb: 4, gap: 1.5 }}>
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 40 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect width="40" height="40" rx="8" fill="#00ED64" />
-              <path
-                d="M12 20h16M20 12v16"
-                stroke="#001E2B"
-                strokeWidth="4"
-                strokeLinecap="round"
-              />
-            </svg>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: "800", letterSpacing: "-0.5px" }}
-            >
-              Pharma-Net
-            </Typography>
-          </Box>
-
-          <Typography
-            variant="h3"
-            sx={{ mb: 3, lineHeight: 1.2, fontWeight: "700" }}
-          >
-            The Modern Pharmacy Network
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{ opacity: 0.8, mb: 4, lineHeight: 1.6, fontWeight: "400" }}
-          >
-            Manage inventory, fulfill orders, and connect with a global
-            marketplace of patients—all from one secure platform.
-          </Typography>
-
-          <Box sx={{ display: "flex", gap: 3, mt: 4 }}>
-            <Box>
-              <Typography
-                variant="h4"
-                color="primary.light"
-                sx={{ fontWeight: "800" }}
-              >
-                10k+
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                Pharmacies
-              </Typography>
-            </Box>
-            <Box>
-              <Typography
-                variant="h4"
-                color="primary.light"
-                sx={{ fontWeight: "800" }}
-              >
-                99.9%
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                Uptime SLA
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Grid>
-
-      {/* Right side - Login Form */}
-      <Grid
-        size={{ xs: 12, md: 7 }}
-        sx={{
-          backgroundColor: "background.default",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          p: { xs: 4, md: 8 },
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 4, md: 6 },
-            width: "100%",
-            maxWidth: 480,
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: "divider",
+        <TextField
+          label="Password"
+          type={showPassword ? "text" : "password"}
+          fullWidth
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          disabled={loading}
+          autoComplete="current-password"
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockOutlined fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword((value) => !value)}
+                    edge="end"
+                    disabled={loading}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
           }}
-        >
-          <Typography
-            variant="h5"
-            component="h2"
-            gutterBottom
-            sx={{ fontWeight: "700" }}
+          sx={{ mb: 1.5 }}
+        />
+
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
+          <Button
+            component={RouterLink}
+            to="/forgot-password"
+            variant="text"
+            disabled={loading}
+            sx={{ px: 0.25, color: "primary.main", fontWeight: 800 }}
           >
-            Welcome back
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            Sign in to your account to continue
-          </Typography>
+            Forgot password?
+          </Button>
+        </Box>
 
-          {registrationMessage && !error && (
-            <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-              {registrationMessage}
-            </Alert>
-          )}
+        <AuthSubmitButton type="submit" loading={loading} loadingText="Signing in">
+          Sign in
+        </AuthSubmitButton>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleSubmit} noValidate>
-            <TextField
-              label="Email Address"
-              type="email"
-              fullWidth
-              margin="normal"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={loading}
-              autoFocus
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email color="action" />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              fullWidth
-              margin="normal"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        disabled={loading}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-              sx={{ mb: 3 }}
-            />
+        <Box sx={{ textAlign: "center", mt: 3 }}>
+          <Typography variant="body2" color="text.secondary">
+            New to Pharma-Net?{" "}
             <Button
               component={RouterLink}
-              to="/forgot-password"
+              to="/register"
               variant="text"
-              sx={{ mb: 3, p: 0, minWidth: "auto", fontWeight: 600 }}
               disabled={loading}
+              sx={{ px: 0.25, color: "primary.main", fontWeight: 800 }}
             >
-              Forgot password?
+              Create an account
             </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              size="large"
-              disabled={loading}
-              sx={{
-                py: 1.5,
-                mb: 3,
-                fontSize: "1.05rem",
-                textTransform: "none",
-                borderRadius: 2,
-              }}
-            >
-              {loading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-
-            <Box sx={{ textAlign: "center" }}>
-              <Typography variant="body2" color="text.secondary">
-                Don't have an account?{" "}
-                <Button
-                  component={RouterLink}
-                  to="/register"
-                  variant="text"
-                  disabled={loading}
-                  sx={{
-                    p: 0,
-                    minWidth: "auto",
-                    fontWeight: 600,
-                    "&:hover": {
-                      backgroundColor: "transparent",
-                      textDecoration: "underline",
-                    },
-                  }}
-                >
-                  Register here
-                </Button>
-              </Typography>
-            </Box>
-          </Box>
-        </Paper>
-      </Grid>
-    </Grid>
+          </Typography>
+        </Box>
+      </Box>
+    </AuthShell>
   );
 };

@@ -1,7 +1,6 @@
 // src/config/db.ts
+import "./env.js";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
-dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "pharma_net_db";

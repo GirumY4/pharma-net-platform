@@ -1,7 +1,7 @@
 // src/routes/RoleRoute.tsx
 import { Box, CircularProgress } from "@mui/material";
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import type { UserRole } from "../types";
 
 interface RoleRouteProps {
