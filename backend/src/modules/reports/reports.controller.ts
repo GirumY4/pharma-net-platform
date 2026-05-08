@@ -2,6 +2,7 @@
 import type { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import {
+  generateDashboardReport,
   generateInventoryReport,
   generateSalesStatistics,
   getExpiringBatches,
@@ -26,7 +27,9 @@ const parseDate = (dateStr: string | undefined, fieldName: string): Date => {
     error.code = "MISSING_DATE_PARAMETER";
     throw error;
   }
-  const date = new Date(dateStr);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+    ? new Date(`${dateStr}T00:00:00`)
+    : new Date(dateStr);
   if (isNaN(date.getTime())) {
     const error = new Error(
       `VALIDATION_ERROR: ${fieldName} must be a valid ISO 8601 date.`,
@@ -36,6 +39,140 @@ const parseDate = (dateStr: string | undefined, fieldName: string): Date => {
     throw error;
   }
   return date;
+};
+
+const parseOptionalPositiveInt = (
+  value: unknown,
+  fallback: number,
+  max: number,
+): number => {
+  const parsed = parseInt(String(value ?? ""), 10);
+  if (Number.isNaN(parsed)) return fallback;
+  return Math.min(Math.max(parsed, 1), max);
+};
+
+const startOfDay = (date: Date): Date => {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+};
+
+const endOfDay = (date: Date): Date => {
+  const copy = new Date(date);
+  copy.setHours(23, 59, 59, 999);
+  return copy;
+};
+
+const getTenantScopedPharmacyId = (
+  req: Request,
+  reportName: string,
+): string => {
+  if (req.user?.role === "admin") {
+    if (req.query.pharmacyId) {
+      if (!isValidObjectId(req.query.pharmacyId as string)) {
+        const error = new Error(
+          "VALIDATION_ERROR: pharmacyId must be a valid ObjectId.",
+        ) as any;
+        error.statusCode = 400;
+        error.code = "INVALID_OBJECT_ID";
+        throw error;
+      }
+      return req.query.pharmacyId as string;
+    }
+
+    const error = new Error(
+      `VALIDATION_ERROR: Admin must specify pharmacyId for tenant-scoped ${reportName} report.`,
+    ) as any;
+    error.statusCode = 400;
+    error.code = "MISSING_TENANT_CONTEXT";
+    throw error;
+  }
+
+  if (req.user?.role === "pharmacy_manager" && req.user.pharmacyId) {
+    return req.user.pharmacyId;
+  }
+
+  const error = new Error(
+    `FORBIDDEN: Insufficient role or missing context to access ${reportName} reports.`,
+  ) as any;
+  error.statusCode = 403;
+  error.code = "INSUFFICIENT_ROLE";
+  throw error;
+};
+
+/**
+ * GET /api/reports/dashboard
+ * Generate single-request dashboard data for tenant dashboards.
+ * Access: pharmacy_manager | admin
+ */
+export const getDashboardReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const pharmacyId = getTenantScopedPharmacyId(req, "dashboard");
+    const now = new Date();
+    const defaultStart = new Date(now);
+    defaultStart.setDate(defaultStart.getDate() - 6);
+
+    const startDate = req.query.startDate
+      ? startOfDay(parseDate(req.query.startDate as string, "startDate"))
+      : startOfDay(defaultStart);
+    const endDate = req.query.endDate
+      ? endOfDay(parseDate(req.query.endDate as string, "endDate"))
+      : endOfDay(now);
+
+    if (startDate > endDate) {
+      const error = new Error(
+        "VALIDATION_ERROR: startDate cannot be after endDate.",
+      ) as any;
+      error.statusCode = 400;
+      error.code = "INVALID_DATE_RANGE";
+      throw error;
+    }
+
+    const ordersLimit = parseOptionalPositiveInt(req.query.ordersLimit, 5, 25);
+    const expiryWindowDays = parseOptionalPositiveInt(
+      req.query.expiryWindowDays,
+      90,
+      365,
+    );
+    const transactionsLimit = parseOptionalPositiveInt(
+      req.query.transactionsLimit,
+      5,
+      20,
+    );
+    const lowStockLimit = parseOptionalPositiveInt(
+      req.query.lowStockLimit,
+      5,
+      20,
+    );
+
+    const report = await generateDashboardReport(pharmacyId, {
+      startDate,
+      endDate,
+      ordersLimit,
+      expiryWindowDays,
+      transactionsLimit,
+      lowStockLimit,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        pharmacyId,
+        generatedAt: new Date(),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        ...report,
+      },
+    });
+  } catch (error: any) {
+    if (!error.statusCode) error.statusCode = 500;
+    if (!error.code) error.code = "INTERNAL_ERROR";
+    next(error);
+  }
 };
 
 /**

@@ -3,6 +3,7 @@ import { Router } from "express";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/rbac.middleware.js";
 import {
+  getDashboardReport,
   getExpiringReport,
   getInventoryReport,
   getPlatformReport,
@@ -13,6 +14,24 @@ const router = Router();
 
 // Apply authentication to all report routes
 router.use(protect);
+
+/**
+ * @route   GET /api/reports/dashboard
+ * @desc    Aggregate dashboard metrics, trends, orders, and expiry alerts
+ * @access  pharmacy_manager | admin
+ * @query   startDate (ISO 8601, optional) - Dashboard window start
+ * @query   endDate (ISO 8601, optional) - Dashboard window end
+ * @query   ordersLimit (number, optional) - Recent orders limit
+ * @query   expiryWindowDays (number, optional) - Expiry forecast window
+ * @query   transactionsLimit (number, optional) - Recent stock ledger limit
+ * @query   lowStockLimit (number, optional) - Low-stock detail limit
+ * @query   pharmacyId (ObjectId, admin only) - Filter by specific tenant
+ */
+router.get(
+  "/dashboard",
+  authorizeRoles(["pharmacy_manager", "admin"]),
+  getDashboardReport,
+);
 
 /**
  * @route   GET /api/reports/inventory

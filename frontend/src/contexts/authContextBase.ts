@@ -1,3 +1,4 @@
+// src/contexts/authContextBase.ts
 import { createContext } from "react";
 import type { AuthUser, IUser, UserRole } from "../types";
 

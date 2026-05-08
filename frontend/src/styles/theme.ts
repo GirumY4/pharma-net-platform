@@ -12,8 +12,8 @@ export const theme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: "#0F8B6C",
-      light: "#34D399",
+      main: "#0F5E4D",
+      light: "#0F8B6C",
       dark: "#063C35",
       contrastText: "#FFFFFF",
     },
@@ -176,7 +176,7 @@ export const theme = createTheme({
           },
           "&.MuiButton-containedPrimary": {
             background:
-              "linear-gradient(135deg, #0F8B6C 0%, #0A6B59 100%)",
+              "linear-gradient(135deg, #0F5E4D 0%, #0A6B59 100%)",
             boxShadow: `0 14px 30px ${alpha(theme.palette.primary.main, 0.24)}`,
             "&:hover": {
               boxShadow: `0 18px 38px ${alpha(theme.palette.primary.main, 0.3)}`,
