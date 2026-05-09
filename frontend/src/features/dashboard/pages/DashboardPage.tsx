@@ -201,25 +201,24 @@ export const DashboardPage = () => {
         <Box sx={{ maxWidth: 760 }}>
           <Typography
             variant="overline"
-            sx={{ color: "primary.main", display: "block", mb: 0.75 }}
+            sx={{ color: "primary.main", display: "block", mb: 0.75, fontWeight: 700, letterSpacing: "0.08em" }}
           >
-            Pharmacy operations
+            PHARMACY OPERATIONS DASHBOARD
           </Typography>
           <Typography
             variant="h4"
             color="text.primary"
             gutterBottom
-            sx={{ fontSize: { xs: "2rem", md: "2.35rem" } }}
+            sx={{ fontSize: { xs: "2rem", md: "2.35rem" }, fontWeight: 800 }}
           >
             Welcome back, {user?.name?.split(" ")[0] ?? "Manager"}
           </Typography>
           <Typography
             variant="body1"
             color="text.secondary"
-            sx={{ maxWidth: 680 }}
+            sx={{ maxWidth: 680, mt: 1, lineHeight: 1.6 }}
           >
-            A single operational view for order flow, revenue, stock risk, FEFO
-            alerts, and immutable inventory movement.
+            Monitor your current inventory, process pending orders, identify low stock items, and track revenue. Use the date filters to narrow down metrics to a specific timeframe. Quick actions are available at the bottom right.
           </Typography>
         </Box>
 

@@ -1,25 +1,25 @@
 // src/features/dashboard/components/DashboardKpiCard.tsx
-import { Box, Paper, Stack, Typography } from "@mui/material";
+import { Box, Paper, Stack, Typography, useTheme } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from "recharts";
 import type { DashboardKpi } from "../types";
 
-const TONE = {
-  green: { main: "#0F5E4D", soft: "rgba(15, 94, 77, 0.1)" },
-  gold: { main: "#B7791F", soft: "rgba(221, 170, 74, 0.16)" },
-  blue: { main: "#2563EB", soft: "rgba(37, 99, 235, 0.1)" },
-  red: { main: "#C2413B", soft: "rgba(194, 65, 59, 0.1)" },
-  slate: { main: "#334155", soft: "rgba(51, 65, 85, 0.09)" },
-} satisfies Record<DashboardKpi["tone"], { main: string; soft: string }>;
+const getToneColors = (tone: DashboardKpi["tone"], theme: any) => {
+  if (tone === "red") {
+    return {
+      main: theme.palette.error.main,
+      soft: alpha(theme.palette.error.main, 0.08),
+    };
+  }
+  return {
+    main: theme.palette.primary.main,
+    soft: alpha(theme.palette.primary.main, 0.08),
+  };
+};
 
 export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
-  const tone = TONE[kpi.tone];
+  const theme = useTheme();
+  const tone = getToneColors(kpi.tone, theme);
   const hasChart = Boolean(kpi.chartData?.length);
 
   return (
@@ -45,23 +45,9 @@ export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
             "linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(247,250,249,0.28) 100%)",
           pointerEvents: "none",
         },
-        "&::after": {
-          content: '""',
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: 0,
-          height: 3,
-          background: `linear-gradient(90deg, ${tone.main}, ${theme.palette.secondary.main})`,
-          opacity: 0.84,
-        },
         "&:hover": {
-          transform: "translateY(-3px)",
-          borderColor: alpha(tone.main, 0.28),
+          borderColor: alpha(theme.palette.primary.main, 0.28),
           boxShadow: "0 24px 64px rgba(18, 32, 28, 0.12)",
-        },
-        "&:active": {
-          transform: "translateY(-1px)",
         },
       })}
     >
@@ -140,8 +126,18 @@ export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
                 margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
               >
                 <defs>
-                  <linearGradient id={`${kpi.id}-chart`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="10%" stopColor={tone.main} stopOpacity={0.26} />
+                  <linearGradient
+                    id={`${kpi.id}-chart`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="10%"
+                      stopColor={tone.main}
+                      stopOpacity={0.26}
+                    />
                     <stop offset="90%" stopColor={tone.main} stopOpacity={0} />
                   </linearGradient>
                 </defs>

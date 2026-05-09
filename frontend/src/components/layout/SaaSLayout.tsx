@@ -1,11 +1,12 @@
+// src/components/layout/SaaSLayout.tsx
 import {
-  AssessmentOutlined as ReportsIcon,
   Dashboard as DashboardIcon,
   Inventory2Outlined as InventoryIcon,
-  LocalShippingOutlined as OrdersIcon,
   Logout,
   Menu as MenuIcon,
   NotificationsNone as NotificationsIcon,
+  LocalShippingOutlined as OrdersIcon,
+  AssessmentOutlined as ReportsIcon,
   Settings as SettingsIcon,
 } from "@mui/icons-material";
 import {
@@ -69,7 +70,7 @@ const Logo = ({ onDark = false }: { onDark?: boolean }) => (
       >
         <path
           d="M14 4.5v19M4.5 14h19"
-          stroke="#0F5E4D"
+          stroke="#0F8B6C"
           strokeWidth="4"
           strokeLinecap="round"
         />
@@ -176,25 +177,24 @@ export const SaaSLayout = () => {
                   onClick={() => navigate(item.path)}
                   startIcon={item.icon}
                   variant={isActive ? "contained" : "text"}
+                  disableElevation
                   sx={{
                     minHeight: 40,
                     px: 2.25,
                     borderRadius: 2,
-                    fontWeight: 800,
+                    fontWeight: 700,
                     ...(isActive
                       ? {
-                          background:
-                            "linear-gradient(135deg, #0F5E4D 0%, #0A6B59 100%)",
+                          bgcolor: "primary.main",
                           color: "white",
-                          boxShadow: "0 14px 30px rgba(15, 94, 77, 0.22)",
                           "&:hover": {
-                            boxShadow: "0 18px 38px rgba(15, 94, 77, 0.28)",
+                            bgcolor: "primary.dark",
                           },
                         }
                       : {
                           color: "text.secondary",
                           "&:hover": {
-                            bgcolor: "rgba(15, 94, 77, 0.08)",
+                            bgcolor: "rgba(15, 139, 108, 0.08)",
                             color: "primary.main",
                           },
                         }),
@@ -256,7 +256,11 @@ export const SaaSLayout = () => {
               >
                 <Typography
                   variant="subtitle2"
-                  sx={{ color: "text.primary", fontWeight: 750, lineHeight: 1.2 }}
+                  sx={{
+                    color: "text.primary",
+                    fontWeight: 750,
+                    lineHeight: 1.2,
+                  }}
                 >
                   {user?.name}
                 </Typography>
@@ -377,7 +381,9 @@ export const SaaSLayout = () => {
               <Typography variant="subtitle2" color="text.primary">
                 Notification center
               </Typography>
-              <Typography variant="body2">No new operational alerts.</Typography>
+              <Typography variant="body2">
+                No new operational alerts.
+              </Typography>
             </Box>
           </Menu>
         </Toolbar>
@@ -402,7 +408,10 @@ export const SaaSLayout = () => {
           sx={{ p: 2, justifyContent: "space-between", alignItems: "center" }}
         >
           <Logo onDark />
-          <IconButton onClick={() => setMobileNavOpen(false)} sx={{ color: "white" }}>
+          <IconButton
+            onClick={() => setMobileNavOpen(false)}
+            sx={{ color: "white" }}
+          >
             <MenuIcon />
           </IconButton>
         </Stack>
