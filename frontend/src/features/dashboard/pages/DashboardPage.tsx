@@ -17,6 +17,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Divider,
   Fab,
   Grid,
   ListItemIcon,
@@ -201,7 +202,13 @@ export const DashboardPage = () => {
         <Box sx={{ maxWidth: 760 }}>
           <Typography
             variant="overline"
-            sx={{ color: "primary.main", display: "block", mb: 0.75, fontWeight: 700, letterSpacing: "0.08em" }}
+            sx={{
+              color: "primary.main",
+              display: "block",
+              mb: 0.75,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+            }}
           >
             PHARMACY OPERATIONS DASHBOARD
           </Typography>
@@ -218,7 +225,10 @@ export const DashboardPage = () => {
             color="text.secondary"
             sx={{ maxWidth: 680, mt: 1, lineHeight: 1.6 }}
           >
-            Monitor your current inventory, process pending orders, identify low stock items, and track revenue. Use the date filters to narrow down metrics to a specific timeframe. Quick actions are available at the bottom right.
+            Monitor your current inventory, process pending orders, identify low
+            stock items, and track revenue. Use the date filters to narrow down
+            metrics to a specific timeframe. Quick actions are available at the
+            bottom right.
           </Typography>
         </Box>
 
@@ -312,6 +322,17 @@ export const DashboardPage = () => {
           )}
         </Stack>
       </Stack>
+
+      {/* Divider */}
+      <Divider
+        sx={{
+          mb: 4,
+          maxWidth: 200,
+          borderWidth: 2,
+          borderColor: "primary.main",
+          borderRadius: 2,
+        }}
+      />
 
       {error && data && (
         <Alert

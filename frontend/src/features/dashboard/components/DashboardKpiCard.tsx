@@ -120,7 +120,12 @@ export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
 
         {hasChart && (
           <Box sx={{ width: "100%", height: 54 }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              minWidth={0}
+              minHeight={0}
+            >
               <AreaChart
                 data={kpi.chartData}
                 margin={{ top: 4, right: 0, bottom: 0, left: 0 }}

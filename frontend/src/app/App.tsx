@@ -9,6 +9,7 @@ import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
+import { InventoryPage } from "../features/inventory/index";
 
 // Import Route Guards
 import { ProtectedRoute } from "../routes/ProtectedRoute";
@@ -19,7 +20,6 @@ const MarketplacePlaceholder = () => (
   <Box sx={{ p: 4 }}>Public Marketplace</Box>
 );
 const AdminPlaceholder = () => <Box sx={{ p: 4 }}>System Admin Console</Box>;
-const InventoryPlaceholder = () => <Box sx={{ p: 4 }}>Inventory workspace</Box>;
 const OrdersPlaceholder = () => <Box sx={{ p: 4 }}>Orders workspace</Box>;
 const ReportsPlaceholder = () => <Box sx={{ p: 4 }}>Reports workspace</Box>;
 const Unauthorized = () => (
@@ -50,7 +50,7 @@ export const App = () => {
         <Route element={<RoleRoute allowedRoles={["pharmacy_manager"]} />}>
           <Route element={<SaaSLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/inventory" element={<InventoryPlaceholder />} />
+            <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/orders" element={<OrdersPlaceholder />} />
             <Route path="/reports" element={<ReportsPlaceholder />} />
           </Route>

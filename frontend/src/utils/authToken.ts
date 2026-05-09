@@ -1,3 +1,4 @@
+// src/utils/authToken.ts
 import type { JwtPayload, UserRole } from "../types";
 
 export const decodeJwtPayload = (token: string): JwtPayload | null => {
