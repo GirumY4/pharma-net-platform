@@ -234,18 +234,13 @@ export const DashboardPage = () => {
 
         <Stack
           spacing={1.25}
-          sx={(theme) => ({
+          sx={{
             width: { xs: "100%", lg: "auto" },
             p: 1.25,
-            borderRadius: 2,
+            borderRadius: 0,
             bgcolor: "rgba(255,255,255,0.74)",
-            border: "1px solid rgba(255,255,255,0.8)",
-            backdropFilter: "blur(22px)",
-            boxShadow: "0 16px 42px rgba(18, 32, 28, 0.08)",
-            "&:focus-within": {
-              borderColor: alpha(theme.palette.primary.main, 0.28),
-            },
-          })}
+            border: "1px solid rgba(23, 35, 31, 0.12)",
+          }}
         >
           <Stack
             direction={{ xs: "column", sm: "row" }}
@@ -330,7 +325,6 @@ export const DashboardPage = () => {
           maxWidth: 200,
           borderWidth: 2,
           borderColor: "primary.main",
-          borderRadius: 2,
         }}
       />
 
@@ -391,19 +385,30 @@ export const DashboardPage = () => {
             onClick={(event) => setQuickActionAnchor(event.currentTarget)}
             sx={{
               position: "fixed",
-              right: { xs: 20, md: 32 },
               bottom: { xs: 20, md: 32 },
-              px: 2.5,
-              gap: 1,
-              fontWeight: 850,
-              boxShadow: "0 18px 42px rgba(15, 94, 77, 0.3)",
+              right: { xs: 20, md: 32 },
+              boxShadow: (theme) =>
+                `0 12px 40px ${alpha(theme.palette.primary.main, 0.25)}`,
+              zIndex: 1000,
+              textTransform: "none",
+              fontWeight: 700,
+              px: 3,
+              py: 1.5,
+              borderRadius: "50px",
+              "& .MuiSvgIcon-root": {
+                mr: 1,
+                fontSize: "1.35rem",
+              },
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               "&:hover": {
-                boxShadow: "0 22px 54px rgba(15, 94, 77, 0.36)",
+                transform: "translateY(-4px)",
+                boxShadow: (theme) =>
+                  `0 16px 48px ${alpha(theme.palette.primary.main, 0.35)}`,
               },
             }}
           >
             <PlaylistAddOutlined />
-            Quick action
+            Quick Action
           </Fab>
           <Menu
             anchorEl={quickActionAnchor}

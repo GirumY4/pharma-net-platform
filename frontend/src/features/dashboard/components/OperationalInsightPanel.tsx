@@ -186,7 +186,8 @@ export const OperationalInsightPanel = ({
           <Stack spacing={1.5}>
             {ORDER_STATUSES.map((status) => {
               const count = ordersByStatus?.[status] ?? 0;
-              const value = totalStatusCount > 0 ? (count / totalStatusCount) * 100 : 0;
+              const value =
+                totalStatusCount > 0 ? (count / totalStatusCount) * 100 : 0;
 
               return (
                 <Box key={status}>
@@ -254,7 +255,11 @@ export const OperationalInsightPanel = ({
                     })}
                   >
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 750 }} noWrap>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 750 }}
+                        noWrap
+                      >
                         {getMedicineLabel(transaction)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -264,7 +269,13 @@ export const OperationalInsightPanel = ({
                     <Chip
                       size="small"
                       label={`${isIn ? "+" : ""}${transaction.quantityChanged}`}
-                      icon={isIn ? <ArrowUpwardOutlined /> : <ArrowDownwardOutlined />}
+                      icon={
+                        isIn ? (
+                          <ArrowUpwardOutlined />
+                        ) : (
+                          <ArrowDownwardOutlined />
+                        )
+                      }
                       sx={{
                         bgcolor: isIn
                           ? "rgba(15, 139, 108, 0.1)"

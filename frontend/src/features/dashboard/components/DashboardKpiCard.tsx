@@ -1,5 +1,4 @@
-// src/features/dashboard/components/DashboardKpiCard.tsx
-import { Box, Paper, Stack, Typography, useTheme } from "@mui/material";
+import { Box, Stack, Typography, useTheme } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from "recharts";
 import type { DashboardKpi } from "../types";
@@ -23,33 +22,19 @@ export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
   const hasChart = Boolean(kpi.chartData?.length);
 
   return (
-    <Paper
-      elevation={0}
-      sx={(theme) => ({
+    <Box
+      sx={{
         p: 2.5,
         minHeight: hasChart ? 190 : 156,
-        borderRadius: 2,
-        border: "1px solid rgba(255, 255, 255, 0.8)",
+        borderRadius: 0,
+        border: "1px solid rgba(23, 35, 31, 0.12)",
         backgroundColor: "rgba(255, 255, 255, 0.78)",
-        backdropFilter: "blur(22px)",
-        boxShadow: "0 18px 48px rgba(18, 32, 28, 0.08)",
         position: "relative",
-        overflow: "hidden",
-        transition:
-          "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(247,250,249,0.28) 100%)",
-          pointerEvents: "none",
-        },
+        transition: "border-color 180ms ease",
         "&:hover": {
           borderColor: alpha(theme.palette.primary.main, 0.28),
-          boxShadow: "0 24px 64px rgba(18, 32, 28, 0.12)",
         },
-      })}
+      }}
     >
       <Stack spacing={2} sx={{ position: "relative", zIndex: 1 }}>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
@@ -58,7 +43,7 @@ export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
               width: 44,
               height: 44,
               flex: "0 0 auto",
-              borderRadius: 2,
+              borderRadius: 0,
               display: "grid",
               placeItems: "center",
               color: tone.main,
@@ -175,6 +160,6 @@ export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
           </Box>
         )}
       </Stack>
-    </Paper>
+    </Box>
   );
 };
