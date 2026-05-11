@@ -11,6 +11,7 @@ import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { InventoryPage } from "../features/inventory/index";
 import { OrdersPage } from "../features/orders/index";
+import { ReportsPage } from "../features/reports/pages/ReportsPage";
 
 // Import Route Guards
 import { ProtectedRoute } from "../routes/ProtectedRoute";
@@ -22,7 +23,6 @@ const MarketplacePlaceholder = () => (
 );
 const AdminPlaceholder = () => <Box sx={{ p: 4 }}>System Admin Console</Box>;
 
-const ReportsPlaceholder = () => <Box sx={{ p: 4 }}>Reports workspace</Box>;
 const Unauthorized = () => (
   <Box sx={{ p: 4, textAlign: "center" }}>
     <Typography variant="h5" color="error">
@@ -53,7 +53,7 @@ export const App = () => {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/reports" element={<ReportsPlaceholder />} />
+            <Route path="/reports" element={<ReportsPage />} />
           </Route>
         </Route>
 

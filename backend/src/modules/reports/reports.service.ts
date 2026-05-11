@@ -489,6 +489,14 @@ export const generateDashboardReport = async (
     },
   );
 
+  const totalRevenue = revenueSummary[0]?.totalRevenue || 0;
+  const totalOrders = revenueSummary[0]?.totalOrders || 0;
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+  const deliveredCount = ordersByStatus.delivered || 0;
+  const fulfillmentRate =
+    totalOrders > 0 ? Math.round((deliveredCount / totalOrders) * 100) : 0;
+
   return {
     totalMedicines: inventorySummary[0]?.totalMedicines || 0,
     lowStockCount: inventorySummary[0]?.lowStockCount || 0,
@@ -497,8 +505,10 @@ export const generateDashboardReport = async (
     activeCustomersCount: activeCustomerIds.length,
     rangeCustomersCount: rangeCustomerIds.length,
     todaySales: todaySalesSummary[0]?.todaySales || 0,
-    totalRevenue: revenueSummary[0]?.totalRevenue || 0,
-    totalOrders: revenueSummary[0]?.totalOrders || 0,
+    totalRevenue,
+    totalOrders,
+    averageOrderValue,
+    fulfillmentRate,
     ordersByStatus,
     revenueTrend,
     stockMovement,
