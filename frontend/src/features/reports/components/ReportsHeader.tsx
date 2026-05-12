@@ -12,8 +12,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
-import type { DateRange, ReportDatePreset } from "../types";
 import { DATE_PRESETS } from "../constants";
+import type { DateRange, ReportDatePreset } from "../types";
 
 interface ReportsHeaderProps {
   dateRange: DateRange;
@@ -68,16 +68,23 @@ export const ReportsHeader = ({
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "stretch", sm: "flex-start" },
+          gap: { xs: 2, sm: 3 },
           mb: 3,
         }}
       >
         <Box>
           <Typography
             variant="h4"
-            color="#0F5E4D"
-            sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
+            sx={{
+              color: "primary.main",
+              fontWeight: 800,
+              letterSpacing: "-0.5px",
+              fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2.05rem" },
+              mb: 0.5,
+            }}
           >
             Analytics & Reports
           </Typography>

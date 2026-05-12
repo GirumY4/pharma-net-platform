@@ -33,12 +33,26 @@ export const ProfileSettingsPage = () => {
   }
 
   return (
-    <Box>
-      <Box sx={{ mb: 4 }}>
+    <Box sx={{ mb: 4 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row", md: "column" },
+          justifyContent: "space-between",
+          alignItems: { xs: "stretch", sm: "flex-start" },
+          gap: { xs: 2, sm: 3 },
+          mb: 3,
+        }}
+      >
         <Typography
           variant="h4"
-          color="#0F5E4D"
-          sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
+          sx={{
+            color: "primary.main",
+            fontWeight: 800,
+            letterSpacing: "-0.5px",
+            fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2.05rem" },
+            mb: 0.5,
+          }}
         >
           Account Settings
         </Typography>

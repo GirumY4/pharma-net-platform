@@ -32,7 +32,7 @@ import {
   deleteMedicine,
   updateMedicine,
 } from "../services/inventoryApi";
-import type { MedicineFormValues } from "../types";
+import type { IMedicine, MedicineFormValues } from "../types";
 
 export const InventoryPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,7 +44,9 @@ export const InventoryPage = () => {
     nearExpiry: false,
   });
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingMedicine, setEditingMedicine] = useState<any>(null);
+  const [editingMedicine, setEditingMedicine] = useState<IMedicine | null>(
+    null,
+  );
   const [submitLoading, setSubmitLoading] = useState(false);
 
   // Inline add section toggle
@@ -86,16 +88,11 @@ export const InventoryPage = () => {
     [activeFilters, updateFilters],
   );
 
-  const handleAddNew = () => {
-    setEditingMedicine(null);
-    setDrawerOpen(true);
-  };
-
   const handleInlineToggle = () => {
     setInlineAddOpen((prev) => !prev);
   };
 
-  const handleEdit = (medicine: any) => {
+  const handleEdit = (medicine: IMedicine) => {
     setEditingMedicine(medicine);
     setDrawerOpen(true);
   };
@@ -203,13 +200,7 @@ export const InventoryPage = () => {
               onClick={refresh}
               disabled={loading}
               size="medium"
-              startIcon={
-                loading ? (
-                  <CircularProgress size={16} />
-                ) : (
-                  <Refresh />
-                )
-              }
+              startIcon={loading ? <CircularProgress size={16} /> : <Refresh />}
               variant="outlined"
               sx={{
                 alignSelf: { xs: "flex-start", sm: "center" },
@@ -276,7 +267,7 @@ export const InventoryPage = () => {
           startIcon={inlineAddOpen ? <Close /> : <Add />}
           onClick={handleInlineToggle}
         >
-          {inlineAddOpen ? "Close" : "Add Medicine"}
+          {inlineAddOpen ? "Close" : "Add New Medicine"}
         </Button>
       </Box>
 
@@ -291,7 +282,7 @@ export const InventoryPage = () => {
           />
         </Box>
 
-        <Box sx={{ py: { xs: 2, sm: 3 } }}>
+        <Box sx={{ py: { xs: 2, sm: 3 }, maxWidth: 768, mx: "auto", width: "100%" }}>
           <MedicineForm
             onSubmit={async (data) => {
               await handleSubmit(data);
