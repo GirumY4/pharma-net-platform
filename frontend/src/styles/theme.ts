@@ -8,6 +8,66 @@ const interfaceFont =
 const bodyFont =
   '"Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
 
+/* ──────────────────────────────────────────────────────────
+ * Design tokens – reusable constants for the entire app.
+ * Import from this file anywhere you need raw values.
+ * ────────────────────────────────────────────────────────── */
+
+/** Semantic surface / card styles consumed by `sx` and component overrides */
+export const surface = {
+  /** Standard card / panel background */
+  card: "rgba(255, 255, 255, 0.82)",
+  /** Elevated glass panel (filter bars, menus) */
+  glass: "rgba(255, 255, 255, 0.74)",
+  /** Soft tinted background for icon badges */
+  iconBadge: (color: string) => alpha(color, 0.08),
+  /** Standard border used on cards, panels, inputs */
+  border: "rgba(23, 35, 31, 0.10)",
+  /** Hover border accent */
+  borderHover: (color: string) => alpha(color, 0.28),
+  /** Consistent backdrop blur value */
+  blur: "blur(22px)",
+} as const;
+
+/** Spacing / radius / elevation shortcuts */
+export const tokens = {
+  radius: {
+    xs: 6,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    pill: 100,
+  },
+  shadow: {
+    card: "0 1px 3px rgba(18, 32, 28, 0.04), 0 4px 12px rgba(18, 32, 28, 0.03)",
+    cardHover:
+      "0 4px 12px rgba(18, 32, 28, 0.06), 0 8px 24px rgba(18, 32, 28, 0.04)",
+    elevated:
+      "0 8px 22px rgba(18, 32, 28, 0.08)",
+    panel:
+      "0 14px 38px rgba(18, 32, 28, 0.08)",
+    fab: (color: string) => `0 12px 40px ${alpha(color, 0.25)}`,
+    fabHover: (color: string) => `0 16px 48px ${alpha(color, 0.35)}`,
+  },
+  transition: {
+    fast: "160ms cubic-bezier(0.4, 0, 0.2, 1)",
+    normal: "240ms cubic-bezier(0.4, 0, 0.2, 1)",
+    slow: "360ms cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+} as const;
+
+/** KPI card tone palette – maps tone keys to consistent colors */
+export const kpiTones = {
+  green: { main: "#0F8B6C", soft: "#E8F8F2" },
+  gold: { main: "#B8860B", soft: "#FFF8E7" },
+  blue: { main: "#2563EB", soft: "#EEF4FF" },
+  red: { main: "#C2413B", soft: "#FEF2F2" },
+  slate: { main: "#475569", soft: "#F1F5F9" },
+} as const;
+
+export type KpiTone = keyof typeof kpiTones;
+
 export const theme = createTheme({
   palette: {
     mode: "light",
@@ -32,6 +92,18 @@ export const theme = createTheme({
       secondary: "#587067",
     },
     divider: "rgba(23, 35, 31, 0.12)",
+    info: {
+      main: "#2563EB",
+      light: "#EEF4FF",
+      dark: "#1D4ED8",
+      contrastText: "#FFFFFF",
+    },
+    warning: {
+      main: "#D97706",
+      light: "#FFF8E7",
+      dark: "#92400E",
+      contrastText: "#FFFFFF",
+    },
     success: {
       main: "#0F8B6C",
       light: "#D9FBEA",
@@ -40,6 +112,9 @@ export const theme = createTheme({
     },
     error: {
       main: "#C2413B",
+      light: "#FEF2F2",
+      dark: "#991B1B",
+      contrastText: "#FFFFFF",
     },
   },
   typography: {
@@ -160,11 +235,10 @@ export const theme = createTheme({
       },
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: 8,
+          borderRadius: tokens.radius.sm,
           minHeight: 44,
           padding: "10px 20px",
-          transition:
-            "transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease",
+          transition: `transform ${tokens.transition.fast}, box-shadow ${tokens.transition.fast}, background-color ${tokens.transition.fast}, color ${tokens.transition.fast}`,
           "&:hover": {
             transform: "translateY(-1px)",
           },
@@ -195,15 +269,22 @@ export const theme = createTheme({
         },
       },
     },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: 700,
+          borderRadius: tokens.radius.xs,
+        },
+      },
+    },
     MuiOutlinedInput: {
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: 8,
+          borderRadius: tokens.radius.sm,
           backgroundColor: "rgba(255, 255, 255, 0.92)",
-          transition:
-            "box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease",
+          transition: `box-shadow ${tokens.transition.fast}, background-color ${tokens.transition.fast}, border-color ${tokens.transition.fast}`,
           "& .MuiOutlinedInput-notchedOutline": {
-            borderColor: "rgba(23, 35, 31, 0.16)",
+            borderColor: surface.border,
           },
           "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: alpha(theme.palette.primary.main, 0.55),
@@ -244,7 +325,7 @@ export const theme = createTheme({
     MuiAlert: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: tokens.radius.sm,
           alignItems: "center",
         },
       },

@@ -177,7 +177,7 @@ export const InventoryTable = ({
           p: 0,
           borderRadius: 4,
           border: "1px solid rgba(0,0,0,0.06)",
-          overflow: "hidden",
+          overflowX: "auto",
         }}
       >
         <Box
@@ -191,7 +191,7 @@ export const InventoryTable = ({
           <Skeleton variant="text" width={250} height={18} />
         </Box>
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 800 }}>
             <TableHead>
               <TableRow>
                 {[
@@ -297,11 +297,11 @@ export const InventoryTable = ({
       sx={{
         borderRadius: 4,
         border: "1px solid rgba(0,0,0,0.06)",
-        overflow: "hidden",
+        overflowX: "auto",
         boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
       }}
     >
-      <Table>
+      <Table sx={{ minWidth: 800 }}>
         <TableHead sx={{ bgcolor: "rgba(0,0,0,0.02)" }}>
           <TableRow>
             <TableCell

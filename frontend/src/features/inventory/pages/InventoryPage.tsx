@@ -1,10 +1,11 @@
-import { Add, Refresh, Search } from "@mui/icons-material";
+import { Add, Close, Refresh, Search } from "@mui/icons-material";
 import {
   Alert,
   Box,
   Button,
   Chip,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
@@ -18,9 +19,12 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useCallback, useState } from "react";
+import { surface, tokens } from "../../../styles/theme";
 import { handleApiError } from "../../../utils/errorMapper";
 import { InventoryTable } from "../components/InventoryTable";
+import { MedicineForm } from "../components/MedicineForm";
 import { MedicineFormDrawer } from "../components/MedicineFormDrawer";
 import { useInventory } from "../hooks/useInventory";
 import {
@@ -42,6 +46,9 @@ export const InventoryPage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingMedicine, setEditingMedicine] = useState<any>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
+
+  // Inline add section toggle
+  const [inlineAddOpen, setInlineAddOpen] = useState(false);
 
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -82,6 +89,10 @@ export const InventoryPage = () => {
   const handleAddNew = () => {
     setEditingMedicine(null);
     setDrawerOpen(true);
+  };
+
+  const handleInlineToggle = () => {
+    setInlineAddOpen((prev) => !prev);
   };
 
   const handleEdit = (medicine: any) => {
@@ -127,6 +138,13 @@ export const InventoryPage = () => {
         await createMedicine(data);
       }
       await refresh();
+      setSnackbar({
+        open: true,
+        message: medicineId
+          ? "Medicine updated successfully"
+          : "Medicine added successfully",
+        severity: "success",
+      });
     } finally {
       setSubmitLoading(false);
     }
@@ -140,148 +158,164 @@ export const InventoryPage = () => {
 
   return (
     <Box>
-      {/* Page Header */}
-      <Box sx={{ mb: 3 }}>
+      {/* ─────────────── Page Header ─────────────── */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          justifyContent: "space-between",
+          alignItems: { xs: "stretch", sm: "flex-start" },
+          gap: { xs: 2, sm: 3 },
+          mb: 3,
+        }}
+      >
         <Box>
           <Typography
             variant="h4"
-            color="#0F5E4D"
-            sx={{ fontWeight: 800, letterSpacing: "-0.5px", mb: 1 }}
+            sx={{
+              color: "primary.main",
+              fontWeight: 800,
+              letterSpacing: "-0.5px",
+              fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2.05rem" },
+              mb: 0.5,
+            }}
           >
             Inventory Management
           </Typography>
           <Typography
             variant="body1"
             color="text.secondary"
-            sx={{ fontSize: "1.1rem", maxWidth: 800 }}
+            sx={{
+              fontSize: { xs: "0.88rem", sm: "0.95rem", md: "1.05rem" },
+              maxWidth: 640,
+              lineHeight: 1.65,
+            }}
           >
-            Manage your pharmacy's medicine catalog, track stock levels across
-            all branches, and monitor batch expiry dates to ensure continuous
-            availability and regulatory compliance.
+            Manage your pharmacy's medicine catalog, track stock levels, and
+            monitor batch expiry dates to ensure availability and compliance.
           </Typography>
         </Box>
+
+        {/* Refresh button — visible on larger screens */}
+        <Tooltip title="Refresh inventory">
+          <span>
+            <Button
+              onClick={refresh}
+              disabled={loading}
+              size="medium"
+              startIcon={
+                loading ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <Refresh />
+                )
+              }
+              variant="outlined"
+              sx={{
+                alignSelf: { xs: "flex-start", sm: "center" },
+                borderColor: surface.border,
+                color: "text.secondary",
+                fontWeight: 700,
+                "&:hover": {
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
+                  borderColor: "primary.main",
+                  color: "primary.main",
+                },
+              }}
+            >
+              Refresh
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
 
-      {/* Divider */}
-      <Divider
-        sx={{
-          mb: 3,
-          maxWidth: 200,
-          borderWidth: 2,
-          borderColor: "primary.main",
-          borderRadius: 2,
-        }}
-      />
-
-      {/* Search & Filters & Add Button */}
+      {/* ────────── Search, Filters & Add ────────── */}
       <Box
         sx={{
           display: "flex",
-          gap: 2,
+          gap: { xs: 1.5, sm: 2 },
           alignItems: "center",
           flexWrap: "wrap",
-          mb: 4,
-          justifyContent: "space-between",
+          mb: 3,
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            alignItems: "center",
-            flexWrap: "wrap",
-            flex: 1,
+        <TextField
+          placeholder="Search by name or SKU…"
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+          size="small"
+          sx={{ minWidth: { xs: "100%", sm: 260 }, flex: { sm: "0 1 320px" } }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: "text.secondary" }} />
+                </InputAdornment>
+              ),
+            },
           }}
+        />
+
+        <Chip
+          label="Low Stock"
+          onClick={() => toggleFilter("lowStock")}
+          color={activeFilters.lowStock ? "primary" : "default"}
+          variant={activeFilters.lowStock ? "filled" : "outlined"}
+        />
+        <Chip
+          label="Near Expiry"
+          onClick={() => toggleFilter("nearExpiry")}
+          color={activeFilters.nearExpiry ? "primary" : "default"}
+          variant={activeFilters.nearExpiry ? "filled" : "outlined"}
+        />
+
+        <Box sx={{ flexGrow: 1 }} />
+
+        <Button
+          variant="contained"
+          startIcon={inlineAddOpen ? <Close /> : <Add />}
+          onClick={handleInlineToggle}
         >
-          <TextField
-            placeholder="Search by name or SKU..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            size="small"
-            sx={{ minWidth: 280 }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search sx={{ color: "text.secondary" }} />
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-
-          <Chip
-            label="Low Stock"
-            onClick={() => toggleFilter("lowStock")}
-            color={activeFilters.lowStock ? "primary" : "default"}
-            variant={activeFilters.lowStock ? "filled" : "outlined"}
-            sx={{ fontWeight: 600 }}
-          />
-          <Chip
-            label="Near Expiry"
-            onClick={() => toggleFilter("nearExpiry")}
-            color={activeFilters.nearExpiry ? "primary" : "default"}
-            variant={activeFilters.nearExpiry ? "filled" : "outlined"}
-            sx={{ fontWeight: 600 }}
-          />
-        </Box>
-
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <Tooltip title="Refresh inventory">
-            <span>
-              <Button
-                onClick={refresh}
-                disabled={loading}
-                size="medium"
-                startIcon={<Refresh />}
-                sx={{
-                  display: { xs: "none", sm: "inline-flex" },
-                  border: "1px solid rgba(255,255,255,0.78)",
-                  bgcolor: "rgba(255,255,255,0.66)",
-                  boxShadow: "0 8px 22px rgba(18, 32, 28, 0.06)",
-                  color: "text.secondary",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  "&:hover": {
-                    bgcolor: "rgba(255,255,255,0.92)",
-                    color: "primary.main",
-                  },
-                }}
-              >
-                Refresh
-              </Button>
-            </span>
-          </Tooltip>
-
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={handleAddNew}
-            sx={{
-              background: "linear-gradient(135deg, #0F8B6C 0%, #0A6B59 100%)",
-              fontWeight: 600,
-              textTransform: "none",
-              px: 3,
-              boxShadow: "0 4px 12px rgba(10, 107, 89, 0.2)",
-              "&:hover": {
-                background: "linear-gradient(135deg, #0A6B59 0%, #064E3B 100%)",
-                boxShadow: "0 6px 16px rgba(10, 107, 89, 0.3)",
-              },
-            }}
-          >
-            Add New Medicine
-          </Button>
-        </Box>
+          {inlineAddOpen ? "Close" : "Add Medicine"}
+        </Button>
       </Box>
 
-      {/* Inventory Table */}
+      {/* ──────── Inline Add Medicine Section ──────── */}
+      <Collapse in={inlineAddOpen} timeout={360} unmountOnExit>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+          <Divider
+            sx={{
+              width: { xs: "60%", sm: "45%", md: "35%" },
+              borderColor: (t) => alpha(t.palette.primary.main, 0.18),
+            }}
+          />
+        </Box>
+
+        <Box sx={{ py: { xs: 2, sm: 3 } }}>
+          <MedicineForm
+            onSubmit={async (data) => {
+              await handleSubmit(data);
+              setInlineAddOpen(false);
+            }}
+            onCancel={() => setInlineAddOpen(false)}
+            loading={submitLoading}
+          />
+        </Box>
+
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
+          <Divider
+            sx={{
+              width: { xs: "60%", sm: "45%", md: "35%" },
+              borderColor: (t) => alpha(t.palette.primary.main, 0.18),
+            }}
+          />
+        </Box>
+      </Collapse>
+
+      {/* spacer when inline is open */}
+      {inlineAddOpen && <Box sx={{ mb: 3 }} />}
+
+      {/* ─────────────── Inventory Table ─────────── */}
       <InventoryTable
         medicines={medicines}
         loading={loading}
@@ -290,7 +324,7 @@ export const InventoryPage = () => {
         onDelete={confirmDelete}
       />
 
-      {/* Pagination */}
+      {/* ────────────────── Pagination ──────────── */}
       {pagination && pagination.totalPages > 1 && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <Pagination
@@ -304,7 +338,7 @@ export const InventoryPage = () => {
         </Box>
       )}
 
-      {/* Add/Edit Drawer */}
+      {/* ─────────── Add/Edit Drawer ─────────── */}
       <MedicineFormDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -313,17 +347,24 @@ export const InventoryPage = () => {
         loading={submitLoading}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* ─────── Delete Confirmation Dialog ───── */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => {
           if (!deleteLoading) setDeleteDialogOpen(false);
         }}
         slotProps={{
-          paper: { sx: { borderRadius: 3, p: 1 } },
+          paper: {
+            sx: {
+              borderRadius: 4,
+              p: 1,
+              border: `1px solid ${surface.border}`,
+              boxShadow: tokens.shadow.panel,
+            },
+          },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, color: "#1E293B" }}>
+        <DialogTitle sx={{ fontWeight: 700, color: "text.primary" }}>
           Delete Medicine
         </DialogTitle>
         <DialogContent>
@@ -336,7 +377,7 @@ export const InventoryPage = () => {
           <Button
             onClick={() => setDeleteDialogOpen(false)}
             disabled={deleteLoading}
-            sx={{ color: "text.secondary", fontWeight: 600 }}
+            sx={{ color: "text.secondary" }}
           >
             Cancel
           </Button>
@@ -350,14 +391,13 @@ export const InventoryPage = () => {
                 <CircularProgress size={20} color="inherit" />
               ) : undefined
             }
-            sx={{ fontWeight: 600, borderRadius: 2 }}
           >
             Delete
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Notifications */}
+      {/* ────────────── Notifications ────────── */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
@@ -368,7 +408,7 @@ export const InventoryPage = () => {
           onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
           severity={snackbar.severity}
           variant="filled"
-          sx={{ width: "100%", borderRadius: 2 }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>

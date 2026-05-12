@@ -5,7 +5,6 @@ import {
   Inventory2Outlined,
   LocalShippingOutlined,
   MedicationOutlined,
-  PaymentsOutlined,
   PlaylistAddOutlined,
   RefreshOutlined,
   TrendingUpOutlined,
@@ -17,7 +16,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Divider,
   Fab,
   Grid,
   ListItemIcon,
@@ -25,18 +23,23 @@ import {
   MenuItem,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { surface, tokens } from "../../../styles/theme";
 import { useAuth } from "../../../contexts/useAuth";
 import { DashboardKpiCard } from "../components/DashboardKpiCard";
 import { ExpiryAlertList } from "../components/ExpiryAlertList";
 import { OperationalInsightPanel } from "../components/OperationalInsightPanel";
 import { RecentOrdersTable } from "../components/RecentOrdersTable";
+import { RevenueTrendCard } from "../components/RevenueTrendCard";
 import { useDashboardData } from "../hooks/useDashboardData";
 import type { DashboardKpi } from "../types";
+
+/* ── helpers ────────────────────────────────────────────── */
 
 const toInputDate = (date: Date) => {
   const year = date.getFullYear();
@@ -49,11 +52,7 @@ const getDefaultDateRange = () => {
   const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - 6);
-
-  return {
-    startDate: toInputDate(start),
-    endDate: toInputDate(end),
-  };
+  return { startDate: toInputDate(start), endDate: toInputDate(end) };
 };
 
 const formatCurrency = (value: number) =>
@@ -62,15 +61,17 @@ const formatCurrency = (value: number) =>
 const formatNumber = (value: number) => value.toLocaleString();
 
 const formatRange = (startDate: string, endDate: string) => {
-  const formatter = new Intl.DateTimeFormat("en", {
+  const fmt = new Intl.DateTimeFormat("en", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
-  return `${formatter.format(
-    new Date(`${startDate}T00:00:00`),
-  )} - ${formatter.format(new Date(`${endDate}T00:00:00`))}`;
+  return `${fmt.format(new Date(`${startDate}T00:00:00`))} – ${fmt.format(
+    new Date(`${endDate}T00:00:00`),
+  )}`;
 };
+
+/* ── component ──────────────────────────────────────────── */
 
 export const DashboardPage = () => {
   const { user } = useAuth();
@@ -107,6 +108,7 @@ export const DashboardPage = () => {
   const dateRangeInvalid = draftRange.startDate > draftRange.endDate;
   const rangeLabel = formatRange(appliedRange.startDate, appliedRange.endDate);
 
+  /* 5 compact KPIs (revenue chart is separate) */
   const kpis: DashboardKpi[] = [
     {
       id: "total-inventory",
@@ -119,23 +121,12 @@ export const DashboardPage = () => {
       trendValue: "Tenant-scoped catalog",
     },
     {
-      id: "range-revenue",
-      title: "Revenue",
-      value: formatCurrency(data?.totalRevenue ?? 0),
-      icon: <PaymentsOutlined />,
-      tone: "gold",
-      helper: `${formatNumber(data?.totalOrders ?? 0)} fulfilled orders`,
-      trend: "neutral",
-      trendValue: rangeLabel,
-      chartData: data?.revenueTrend ?? [],
-    },
-    {
       id: "pending-orders",
       title: "Pending Queue",
       value: formatNumber(data?.pendingOrdersCount ?? 0),
       icon: <LocalShippingOutlined />,
       tone: "blue",
-      helper: "Orders awaiting pharmacy approval",
+      helper: "Orders awaiting approval",
       trend: data?.pendingOrdersCount ? "up" : "neutral",
       trendValue: data?.pendingOrdersCount ? "Actionable now" : "Queue clear",
     },
@@ -177,157 +168,200 @@ export const DashboardPage = () => {
   ];
 
   const applyDateRange = () => {
-    if (!dateRangeInvalid) {
-      setAppliedRange(draftRange);
-    }
+    if (!dateRangeInvalid) setAppliedRange(draftRange);
   };
 
   const resetDateRange = () => {
-    const nextRange = getDefaultDateRange();
-    setDraftRange(nextRange);
-    setAppliedRange(nextRange);
+    const next = getDefaultDateRange();
+    setDraftRange(next);
+    setAppliedRange(next);
   };
+
+  /* ── render ─────────────────────────────────────────── */
 
   return (
     <Box sx={{ pb: showManagerActions ? 10 : 0 }}>
-      <Stack
-        direction={{ xs: "column", lg: "row" }}
-        spacing={3}
+      {/* ─────────────────── Header ─────────────────── */}
+      <Box
         sx={{
-          mb: 4,
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
           justifyContent: "space-between",
-          alignItems: { xs: "stretch", lg: "flex-end" },
+          alignItems: { xs: "stretch", md: "flex-start" },
+          gap: { xs: 2.5, md: 3 },
+          mb: 4,
         }}
       >
-        <Box sx={{ maxWidth: 760 }}>
-          <Typography
-            variant="overline"
-            sx={{
-              color: "primary.main",
-              display: "block",
-              mb: 0.75,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-            }}
-          >
-            PHARMACY OPERATIONS DASHBOARD
-          </Typography>
+        {/* Title block — mirrors Reports / Inventory / Orders header */}
+        <Box>
           <Typography
             variant="h4"
-            color="text.primary"
-            gutterBottom
-            sx={{ fontSize: { xs: "2rem", md: "2.35rem" }, fontWeight: 800 }}
+            sx={{
+              color: "primary.main",
+              fontWeight: 800,
+              letterSpacing: "-0.5px",
+              fontSize: { xs: "1.6rem", sm: "1.85rem", md: "2.05rem" },
+              mb: 0.5,
+            }}
           >
             Welcome back, {user?.name?.split(" ")[0] ?? "Manager"}
           </Typography>
           <Typography
             variant="body1"
             color="text.secondary"
-            sx={{ maxWidth: 680, mt: 1, lineHeight: 1.6 }}
+            sx={{
+              maxWidth: 560,
+              fontSize: { xs: "0.92rem", sm: "1rem", md: "1.05rem" },
+              lineHeight: 1.65,
+            }}
           >
-            Monitor your current inventory, process pending orders, identify low
-            stock items, and track revenue. Use the date filters to narrow down
-            metrics to a specific timeframe. Quick actions are available at the
-            bottom right.
+            Monitor inventory, process pending orders, identify low-stock items,
+            and track revenue across your pharmacy.
           </Typography>
         </Box>
 
-        <Stack
-          spacing={1.25}
-          sx={{
-            width: { xs: "100%", lg: "auto" },
-            p: 1.25,
-            borderRadius: 0,
-            bgcolor: "rgba(255,255,255,0.74)",
-            border: "1px solid rgba(23, 35, 31, 0.12)",
-          }}
-        >
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1.25}
-            sx={{ alignItems: { xs: "stretch", sm: "center" } }}
-          >
-            <TextField
-              label="Start date"
-              type="date"
-              size="small"
-              value={draftRange.startDate}
-              error={dateRangeInvalid}
-              onChange={(event) =>
-                setDraftRange((current) => ({
-                  ...current,
-                  startDate: event.target.value,
-                }))
-              }
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
-            <TextField
-              label="End date"
-              type="date"
-              size="small"
-              value={draftRange.endDate}
-              error={dateRangeInvalid}
-              onChange={(event) =>
-                setDraftRange((current) => ({
-                  ...current,
-                  endDate: event.target.value,
-                }))
-              }
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
+        {/* Refresh */}
+        <Tooltip title="Fetch latest data">
+          <span>
             <Button
-              variant="contained"
+              variant="outlined"
               startIcon={
                 refreshing ? (
-                  <CircularProgress size={16} color="inherit" />
+                  <CircularProgress size={16} />
                 ) : (
-                  <CalendarMonthOutlined />
+                  <RefreshOutlined />
                 )
               }
-              disabled={dateRangeInvalid || refreshing}
-              onClick={applyDateRange}
+              onClick={refresh}
+              disabled={refreshing}
+              sx={{
+                alignSelf: { xs: "flex-start", md: "center" },
+                fontWeight: 700,
+                color: "text.secondary",
+                borderColor: surface.border,
+                textTransform: "none",
+                "&:hover": {
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
+                  borderColor: "primary.main",
+                  color: "primary.main",
+                },
+              }}
             >
-              Apply
+              Refresh
             </Button>
+          </span>
+        </Tooltip>
+      </Box>
+
+      {/* ─────────────── Date-range filter ───────────── */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          alignItems: "center",
+          flexWrap: "wrap",
+          mb: 4,
+        }}
+      >
+        <TextField
+          label="Start date"
+          type="date"
+          size="small"
+          value={draftRange.startDate}
+          error={dateRangeInvalid}
+          onChange={(e) =>
+            setDraftRange((c) => ({ ...c, startDate: e.target.value }))
+          }
+          slotProps={{ inputLabel: { shrink: true } }}
+          sx={{ minWidth: { xs: "100%", sm: 160 } }}
+        />
+        <TextField
+          label="End date"
+          type="date"
+          size="small"
+          value={draftRange.endDate}
+          error={dateRangeInvalid}
+          onChange={(e) =>
+            setDraftRange((c) => ({ ...c, endDate: e.target.value }))
+          }
+          slotProps={{ inputLabel: { shrink: true } }}
+          sx={{ minWidth: { xs: "100%", sm: 160 } }}
+        />
+        <Button
+          variant="contained"
+          startIcon={
+            refreshing ? (
+              <CircularProgress size={16} color="inherit" />
+            ) : (
+              <CalendarMonthOutlined />
+            )
+          }
+          disabled={dateRangeInvalid || refreshing}
+          onClick={applyDateRange}
+        >
+          Apply
+        </Button>
+        <Tooltip title="Reset to last 7 days">
+          <span>
             <Button
               variant="outlined"
               startIcon={<RefreshOutlined />}
               disabled={refreshing}
               onClick={resetDateRange}
+              sx={{
+                borderColor: surface.border,
+                color: "text.secondary",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  color: "primary.main",
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+                },
+              }}
             >
               7 days
             </Button>
-          </Stack>
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-            <Chip
-              size="small"
-              label={rangeLabel}
-              sx={{ fontWeight: 800, bgcolor: "rgba(15, 94, 77, 0.08)" }}
-            />
-            {data?.generatedAt && (
-              <Typography variant="caption" color="text.secondary">
-                Synced {new Date(data.generatedAt).toLocaleTimeString()}
-              </Typography>
-            )}
-          </Stack>
-          {dateRangeInvalid && (
-            <Typography variant="caption" color="error.main">
-              Start date must be before end date.
+          </span>
+        </Tooltip>
+
+        <Box sx={{ flexGrow: 1 }} />
+
+        {/* Range chip + sync time */}
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Chip
+            size="small"
+            label={rangeLabel}
+            sx={(t) => ({
+              fontWeight: 700,
+              bgcolor: alpha(t.palette.primary.main, 0.07),
+              color: "primary.dark",
+              fontSize: { xs: "0.68rem", sm: "0.72rem" },
+            })}
+          />
+          {data?.generatedAt && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontSize: { xs: "0.65rem", sm: "0.72rem" },
+              }}
+            >
+              Synced {new Date(data.generatedAt).toLocaleTimeString()}
             </Typography>
           )}
         </Stack>
-      </Stack>
 
-      {/* Divider */}
-      <Divider
-        sx={{
-          mb: 4,
-          maxWidth: 200,
-          borderWidth: 2,
-          borderColor: "primary.main",
-        }}
-      />
+        {dateRangeInvalid && (
+          <Typography
+            variant="caption"
+            color="error.main"
+            sx={{ width: "100%" }}
+          >
+            Start date must be before end date.
+          </Typography>
+        )}
+      </Box>
 
+      {/* Stale-data warning */}
       {error && data && (
         <Alert
           severity="warning"
@@ -342,15 +376,26 @@ export const DashboardPage = () => {
         </Alert>
       )}
 
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+      {/* ────────────────── KPI cards ───────────────── */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
         {kpis.map((kpi) => (
-          <Grid size={{ xs: 12, sm: 6, lg: 4, xl: 2 }} key={kpi.id}>
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }} key={kpi.id}>
             <DashboardKpiCard kpi={kpi} />
           </Grid>
         ))}
       </Grid>
 
-      <Grid container spacing={2.5}>
+      {/* ───────────── Revenue trend (full width) ───── */}
+      <Box sx={{ mb: 3 }}>
+        <RevenueTrendCard
+          data={data?.revenueTrend ?? []}
+          loading={loading}
+          rangeLabel={`${formatCurrency(data?.totalRevenue ?? 0)} total · ${formatNumber(data?.totalOrders ?? 0)} orders · ${rangeLabel}`}
+        />
+      </Box>
+
+      {/* ─────────────── Detail panels ──────────────── */}
+      <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <RecentOrdersTable
             orders={data?.recentOrders ?? null}
@@ -377,33 +422,30 @@ export const DashboardPage = () => {
         </Grid>
       </Grid>
 
+      {/* ─────────── Quick-action FAB (manager) ─────── */}
       {showManagerActions && (
         <>
           <Fab
             color="primary"
             variant="extended"
-            onClick={(event) => setQuickActionAnchor(event.currentTarget)}
+            onClick={(e) => setQuickActionAnchor(e.currentTarget)}
             sx={{
               position: "fixed",
               bottom: { xs: 20, md: 32 },
               right: { xs: 20, md: 32 },
-              boxShadow: (theme) =>
-                `0 12px 40px ${alpha(theme.palette.primary.main, 0.25)}`,
+              boxShadow: (t) => tokens.shadow.fab(t.palette.primary.main),
               zIndex: 1000,
               textTransform: "none",
               fontWeight: 700,
               px: 3,
               py: 1.5,
-              borderRadius: "50px",
-              "& .MuiSvgIcon-root": {
-                mr: 1,
-                fontSize: "1.35rem",
-              },
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              borderRadius: `${tokens.radius.pill}px`,
+              "& .MuiSvgIcon-root": { mr: 1, fontSize: "1.35rem" },
+              transition: `all ${tokens.transition.normal}`,
               "&:hover": {
                 transform: "translateY(-4px)",
-                boxShadow: (theme) =>
-                  `0 16px 48px ${alpha(theme.palette.primary.main, 0.35)}`,
+                boxShadow: (t) =>
+                  tokens.shadow.fabHover(t.palette.primary.main),
               },
             }}
           >
@@ -422,11 +464,11 @@ export const DashboardPage = () => {
                 sx: {
                   mb: 1.5,
                   minWidth: 240,
-                  borderRadius: 2,
-                  border: "1px solid rgba(255,255,255,0.78)",
-                  backgroundColor: "rgba(255,255,255,0.88)",
-                  backdropFilter: "blur(22px)",
-                  boxShadow: "0 18px 54px rgba(18, 32, 28, 0.16)",
+                  borderRadius: 3,
+                  border: `1px solid ${surface.border}`,
+                  backgroundColor: surface.glass,
+                  backdropFilter: surface.blur,
+                  boxShadow: tokens.shadow.panel,
                 },
               },
             }}

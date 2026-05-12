@@ -118,12 +118,12 @@ export const OperationalInsightPanel = ({
     <Paper
       elevation={0}
       sx={{
-        borderRadius: 2,
-        border: "1px solid rgba(255,255,255,0.78)",
-        backgroundColor: "rgba(255,255,255,0.72)",
-        backdropFilter: "blur(22px)",
+        borderRadius: 4,
+        border: "1px solid rgba(255, 255, 255, 0.8)",
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        backdropFilter: "blur(24px)",
         overflow: "hidden",
-        boxShadow: "0 18px 48px rgba(18, 32, 28, 0.08)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.04)",
       }}
     >
       <Stack
@@ -132,17 +132,24 @@ export const OperationalInsightPanel = ({
         sx={{
           justifyContent: "space-between",
           alignItems: { xs: "stretch", sm: "center" },
-          p: 2.5,
+          p: { xs: 2, sm: 2.5 },
           borderBottom: "1px solid rgba(23, 35, 31, 0.08)",
           background:
             "linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(247,250,249,0.76) 100%)",
         }}
       >
         <Box>
-          <Typography variant="h6" sx={{ color: "text.primary" }}>
+          <Typography
+            variant="h6"
+            sx={{ color: "text.primary", fontSize: { xs: "1rem", sm: "1.1rem" } }}
+          >
             Operational Intelligence
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: { xs: "0.78rem", sm: "0.82rem" } }}
+          >
             Order lifecycle, stock ledger, and product movement signals.
           </Typography>
         </Box>

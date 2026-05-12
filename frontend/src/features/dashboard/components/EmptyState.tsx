@@ -21,15 +21,15 @@ export const EmptyState = ({
     sx={(theme) => ({
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 280,
-      py: 6,
-      px: 3,
+      minHeight: 260,
+      py: { xs: 4, sm: 6 },
+      px: { xs: 2.5, sm: 3 },
       textAlign: "center",
       bgcolor: "rgba(255, 255, 255, 0.7)",
-      borderRadius: 2,
+      borderRadius: 4,
       border: "1px dashed rgba(15, 94, 77, 0.2)",
-      backdropFilter: "blur(18px)",
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+      backdropFilter: "blur(24px)",
+      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.04)",
       color: "text.secondary",
       "&:hover": {
         borderColor: alpha(theme.palette.primary.main, 0.34),
@@ -51,10 +51,21 @@ export const EmptyState = ({
       {icon || <CheckCircleOutlined fontSize="medium" />}
     </Box>
     <Box>
-      <Typography variant="h6" sx={{ color: "text.primary", mb: 0.75 }}>
+      <Typography
+        variant="h6"
+        sx={{
+          color: "text.primary",
+          mb: 0.75,
+          fontSize: { xs: "1rem", sm: "1.1rem" },
+        }}
+      >
         {title}
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ maxWidth: 360, fontSize: { xs: "0.8rem", sm: "0.85rem" } }}
+      >
         {description}
       </Typography>
     </Box>

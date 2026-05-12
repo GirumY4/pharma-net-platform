@@ -227,6 +227,7 @@ export const SaaSLayout = () => {
 
             <IconButton
               size="medium"
+              onClick={() => navigate("/settings")}
               sx={{
                 display: { xs: "none", sm: "inline-flex" },
                 border: "1px solid rgba(255,255,255,0.78)",
@@ -345,6 +346,18 @@ export const SaaSLayout = () => {
                 {(user as IUser)?.email || ""}
               </Typography>
             </Box>
+            <MenuItem
+              onClick={() => {
+                setUserMenuAnchor(null);
+                navigate("/settings");
+              }}
+              sx={{ py: 1.5, mx: 1, borderRadius: 1.5 }}
+            >
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              Profile Settings
+            </MenuItem>
             <MenuItem
               onClick={handleLogout}
               sx={{ color: "error.main", py: 1.5, mx: 1, borderRadius: 1.5 }}

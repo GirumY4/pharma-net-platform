@@ -8,11 +8,13 @@ import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
+import { ConfirmDeactivationPage } from "../features/auth/pages/ConfirmDeactivationPage";
+import { ConfirmReactivationPage } from "../features/auth/pages/ConfirmReactivationPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { InventoryPage } from "../features/inventory/index";
 import { OrdersPage } from "../features/orders/index";
 import { ReportsPage } from "../features/reports/pages/ReportsPage";
-
+import { ProfileSettingsPage } from "../features/users/index";
 // Import Route Guards
 import { ProtectedRoute } from "../routes/ProtectedRoute";
 import { RoleRoute } from "../routes/RoleRoute";
@@ -42,11 +44,18 @@ export const App = () => {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      <Route path="/confirm-deactivation/:token" element={<ConfirmDeactivationPage />} />
+      <Route path="/confirm-reactivation/:token" element={<ConfirmReactivationPage />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
 
       {/* Protected Routes (require authentication) */}
       <Route element={<ProtectedRoute />}>
+        {/* Common Protected Routes (All Roles) */}
+        <Route element={<SaaSLayout />}>
+          <Route path="/settings" element={<ProfileSettingsPage />} />
+        </Route>
+
         {/* Pharmacy Manager Only */}
         <Route element={<RoleRoute allowedRoles={["pharmacy_manager"]} />}>
           <Route element={<SaaSLayout />}>

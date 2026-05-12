@@ -19,6 +19,7 @@ export interface IUser {
   address?: string;
   city?: string;
   location?: ILocation | null;
+  profilePictureUrl?: string;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt?: string | null; // ISO date string or null

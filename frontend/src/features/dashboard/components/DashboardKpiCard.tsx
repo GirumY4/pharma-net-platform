@@ -1,165 +1,146 @@
-import { Box, Stack, Typography, useTheme } from "@mui/material";
+import { Box, Paper, Stack, Typography, useTheme } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from "recharts";
+import { kpiTones, surface, tokens } from "../../../styles/theme";
 import type { DashboardKpi } from "../types";
 
-const getToneColors = (tone: DashboardKpi["tone"], theme: any) => {
-  if (tone === "red") {
-    return {
-      main: theme.palette.error.main,
-      soft: alpha(theme.palette.error.main, 0.08),
-    };
-  }
-  return {
-    main: theme.palette.primary.main,
-    soft: alpha(theme.palette.primary.main, 0.08),
-  };
+const getToneColors = (tone: DashboardKpi["tone"]) => {
+  const resolved = kpiTones[tone] ?? kpiTones.green;
+  return { main: resolved.main, soft: resolved.soft };
 };
 
 export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
   const theme = useTheme();
-  const tone = getToneColors(kpi.tone, theme);
-  const hasChart = Boolean(kpi.chartData?.length);
+  const tone = getToneColors(kpi.tone);
 
   return (
-    <Box
+    <Paper
+      elevation={0}
       sx={{
-        p: 2.5,
-        minHeight: hasChart ? 190 : 156,
-        borderRadius: 0,
-        border: "1px solid rgba(23, 35, 31, 0.12)",
-        backgroundColor: "rgba(255, 255, 255, 0.78)",
+        p: { xs: 2.25, sm: 2.5 },
+        height: "100%",
+        borderRadius: 4,
+        border: `1px solid rgba(255, 255, 255, 0.8)`,
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        backdropFilter: surface.blur,
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.04)",
         position: "relative",
-        transition: "border-color 180ms ease",
+        overflow: "hidden",
+        transition: `transform ${tokens.transition.fast}, box-shadow ${tokens.transition.fast}`,
         "&:hover": {
-          borderColor: alpha(theme.palette.primary.main, 0.28),
+          transform: "translateY(-2px)",
+          boxShadow: "0 12px 40px rgba(0, 0, 0, 0.08)",
         },
       }}
     >
-      <Stack spacing={2} sx={{ position: "relative", zIndex: 1 }}>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+      {/* Subtle colour glow — matches Reports KPICard */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: -20,
+          right: -20,
+          width: 90,
+          height: 90,
+          borderRadius: "50%",
+          background: tone.main,
+          filter: "blur(40px)",
+          opacity: 0.25,
+          pointerEvents: "none",
+        }}
+      />
+
+      <Box sx={{ position: "relative", zIndex: 1 }}>
+        {/* Icon + label row */}
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{ alignItems: "center", mb: 2 }}
+        >
           <Box
             sx={{
-              width: 44,
-              height: 44,
-              flex: "0 0 auto",
-              borderRadius: 0,
-              display: "grid",
-              placeItems: "center",
+              bgcolor: "white",
               color: tone.main,
-              bgcolor: tone.soft,
-              border: `1px solid ${alpha(tone.main, 0.16)}`,
+              p: 1.25,
+              borderRadius: 2,
+              display: "flex",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              border: `1px solid ${alpha(tone.main, 0.08)}`,
+              "& .MuiSvgIcon-root": { fontSize: "1.2rem" },
             }}
           >
             {kpi.icon}
           </Box>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography
-              variant="overline"
-              sx={{
-                color: "text.secondary",
-                display: "block",
-                lineHeight: 1.3,
-              }}
-            >
-              {kpi.title}
-            </Typography>
-            <Typography
-              variant="h4"
-              sx={{
-                color: "text.primary",
-                fontSize: { xs: "1.7rem", md: "1.9rem" },
-                overflowWrap: "anywhere",
-              }}
-            >
-              {kpi.value}
-            </Typography>
-          </Box>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              fontSize: { xs: "0.68rem", sm: "0.72rem" },
+              lineHeight: 1.3,
+            }}
+          >
+            {kpi.title}
+          </Typography>
         </Stack>
 
-        {(kpi.helper || kpi.trendValue) && (
-          <Stack spacing={0.4}>
-            {kpi.helper && (
-              <Typography variant="body2" color="text.secondary">
-                {kpi.helper}
-              </Typography>
-            )}
-            {kpi.trendValue && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color:
-                    kpi.trend === "up"
-                      ? "success.main"
-                      : kpi.trend === "down"
-                        ? "error.main"
-                        : "text.secondary",
-                  fontWeight: 750,
-                }}
-              >
-                {kpi.trendValue}
-              </Typography>
-            )}
-          </Stack>
+        {/* Primary value */}
+        <Typography
+          variant="h4"
+          sx={{
+            color: "text.primary",
+            fontWeight: 800,
+            lineHeight: 1,
+            mb: 0.75,
+            fontSize: { xs: "1.5rem", sm: "1.65rem", md: "1.75rem" },
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {kpi.value}
+        </Typography>
+
+        {/* Helper text */}
+        {kpi.helper && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mb: kpi.trendValue ? 1 : 0,
+              fontSize: { xs: "0.78rem", sm: "0.82rem" },
+              lineHeight: 1.5,
+            }}
+          >
+            {kpi.helper}
+          </Typography>
         )}
 
-        {hasChart && (
-          <Box sx={{ width: "100%", height: 54 }}>
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-              minWidth={0}
-              minHeight={0}
-            >
-              <AreaChart
-                data={kpi.chartData}
-                margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
-              >
-                <defs>
-                  <linearGradient
-                    id={`${kpi.id}-chart`}
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="10%"
-                      stopColor={tone.main}
-                      stopOpacity={0.26}
-                    />
-                    <stop offset="90%" stopColor={tone.main} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <YAxis dataKey="revenue" hide domain={["auto", "auto"]} />
-                <Tooltip
-                  cursor={false}
-                  formatter={(value) => [
-                    `ETB ${Number(value).toLocaleString()}`,
-                    "Revenue",
-                  ]}
-                  labelFormatter={(_, payload) => payload?.[0]?.payload?.label}
-                  contentStyle={{
-                    borderRadius: 8,
-                    border: "1px solid rgba(15, 94, 77, 0.14)",
-                    boxShadow: "0 14px 34px rgba(18, 32, 28, 0.14)",
-                    fontSize: 12,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke={tone.main}
-                  strokeWidth={2.5}
-                  fill={`url(#${kpi.id}-chart)`}
-                  dot={false}
-                  activeDot={{ r: 3.5 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Box>
+        {/* Trend indicator */}
+        {kpi.trendValue && (
+          <Typography
+            variant="caption"
+            sx={{
+              color:
+                kpi.trend === "up"
+                  ? "success.main"
+                  : kpi.trend === "down"
+                    ? "error.main"
+                    : "text.secondary",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              fontSize: { xs: "0.68rem", sm: "0.72rem" },
+            }}
+          >
+            {kpi.trend === "up"
+              ? "↑"
+              : kpi.trend === "down"
+                ? "↓"
+                : "→"}{" "}
+            {kpi.trendValue}
+          </Typography>
         )}
-      </Stack>
-    </Box>
+      </Box>
+    </Paper>
   );
 };
