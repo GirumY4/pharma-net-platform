@@ -1,5 +1,5 @@
 // src/features/users/pages/ProfileSettingsPage.tsx
-import { Alert, Box, Grid, Typography } from "@mui/material";
+import { Alert, Box, Grid, Stack, Typography } from "@mui/material";
 import { AccountSettingsCard } from "../components/AccountSettingsCard";
 import { PasswordChangeForm } from "../components/PasswordChangeForm";
 import { ProfileForm } from "../components/ProfileForm";
@@ -33,52 +33,54 @@ export const ProfileSettingsPage = () => {
   }
 
   return (
-    <Box sx={{ mb: 4 }}>
+    <Box sx={{ mb: 5, px: { xs: 2.5, sm: 4, md: 5 } }}>
       <Box
         sx={{
           display: "flex",
           flexDirection: { xs: "column", sm: "row", md: "column" },
           justifyContent: "space-between",
           alignItems: { xs: "stretch", sm: "flex-start" },
-          gap: { xs: 2, sm: 3 },
-          mb: 3,
+          gap: { xs: 1.5, sm: 3 },
+          mb: 4,
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            color: "primary.main",
-            fontWeight: 800,
-            letterSpacing: "-0.5px",
-            fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2.05rem" },
-            mb: 0.5,
-          }}
-        >
-          Account Settings
-        </Typography>
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{ fontSize: "1.1rem", maxWidth: 600 }}
-        >
-          Manage your profile information, security settings, and account
-          preferences.
-        </Typography>
+        <Stack spacing={0.5}>
+          <Typography
+            variant="h4"
+            sx={{
+              color: "primary.main",
+              fontWeight: 800,
+              letterSpacing: "-0.5px",
+              fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2.05rem" },
+              lineHeight: 1.2,
+            }}
+          >
+            Account Settings
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ fontSize: { xs: "0.95rem", sm: "1.05rem" }, maxWidth: 600 }}
+          >
+            Manage your profile information, security settings, and account
+            preferences.
+          </Typography>
+        </Stack>
       </Box>
 
-      <ProfileHeader profile={profile} />
+      <ProfileHeader profile={profile} sx={{ mb: 4 }} />
 
       <Grid container spacing={4}>
         {/* Left Column: Profile & Password */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Box sx={{ display: "grid", gap: 4 }}>
+          <Stack spacing={4}>
             <ProfileForm profile={profile} onSuccess={refresh} />
             <PasswordChangeForm
               onSuccess={() => {
                 // Optionally show success toast
               }}
             />
-          </Box>
+          </Stack>
         </Grid>
 
         {/* Right Column: Account Info */}

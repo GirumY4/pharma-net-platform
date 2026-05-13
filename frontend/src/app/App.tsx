@@ -4,14 +4,16 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 // Import Auth Pages
 import { SaaSLayout } from "../components/layout/SaaSLayout";
+import { UserManagementPage } from "../features/admin/pages/UserManagementPage";
+import { ConfirmDeactivationPage } from "../features/auth/pages/ConfirmDeactivationPage";
+import { ConfirmReactivationPage } from "../features/auth/pages/ConfirmReactivationPage";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
-import { ConfirmDeactivationPage } from "../features/auth/pages/ConfirmDeactivationPage";
-import { ConfirmReactivationPage } from "../features/auth/pages/ConfirmReactivationPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { InventoryPage } from "../features/inventory/index";
+import { MarketplacePage } from "../features/marketplace/pages/MarketplacePage";
 import { OrdersPage } from "../features/orders/index";
 import { ReportsPage } from "../features/reports/pages/ReportsPage";
 import { ProfileSettingsPage } from "../features/users/index";
@@ -20,11 +22,6 @@ import { ProtectedRoute } from "../routes/ProtectedRoute";
 import { RoleRoute } from "../routes/RoleRoute";
 
 // Placeholders (to be replaced with real feature pages)
-const MarketplacePlaceholder = () => (
-  <Box sx={{ p: 4 }}>Public Marketplace</Box>
-);
-const AdminPlaceholder = () => <Box sx={{ p: 4 }}>System Admin Console</Box>;
-
 const Unauthorized = () => (
   <Box sx={{ p: 4, textAlign: "center" }}>
     <Typography variant="h5" color="error">
@@ -44,10 +41,18 @@ export const App = () => {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-      <Route path="/confirm-deactivation/:token" element={<ConfirmDeactivationPage />} />
-      <Route path="/confirm-reactivation/:token" element={<ConfirmReactivationPage />} />
+      <Route
+        path="/confirm-deactivation/:token"
+        element={<ConfirmDeactivationPage />}
+      />
+      <Route
+        path="/confirm-reactivation/:token"
+        element={<ConfirmReactivationPage />}
+      />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/marketplace" element={<MarketplacePage />} />
+      <Route path="/" element={<Navigate to="/marketplace" replace />} />
 
       {/* Protected Routes (require authentication) */}
       <Route element={<ProtectedRoute />}>
@@ -68,13 +73,18 @@ export const App = () => {
 
         {/* Admin Only */}
         <Route element={<RoleRoute allowedRoles={["admin"]} />}>
-          <Route path="/admin" element={<AdminPlaceholder />} />
+          <Route element={<SaaSLayout />}>
+            {/* Mount the User Management page here */}
+            <Route path="/admin/users" element={<UserManagementPage />} />
+
+            {/* Keep other admin routes here if you add them later */}
+          </Route>
         </Route>
 
-        {/* Public User (Patient) Only */}
+        {/* Public User (Patient) Only 
         <Route element={<RoleRoute allowedRoles={["public_user"]} />}>
           <Route path="/marketplace" element={<MarketplacePlaceholder />} />
-        </Route>
+        </Route> */}
       </Route>
 
       {/* Catch‑all 404 */}

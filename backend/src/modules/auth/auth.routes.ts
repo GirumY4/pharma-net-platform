@@ -5,7 +5,9 @@ import {
   login,
   register,
   resetPassword,
+  changePassword,
 } from "./auth.controller.js";
+import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -20,5 +22,8 @@ router.post("/forgot-password", forgotPassword);
 
 // PUT /api/auth/reset-password/:token
 router.put("/reset-password/:token", resetPassword);
+
+// POST /api/auth/change-password
+router.post("/change-password", protect, changePassword);
 
 export default router;

@@ -93,6 +93,7 @@ export interface AuthUser {
   _id: string;
   name: string;
   role: UserRole;
+  profilePictureUrl?: string;
 }
 
 /**

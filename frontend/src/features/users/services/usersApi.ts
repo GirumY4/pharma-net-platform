@@ -64,3 +64,32 @@ export const confirmReactivation = async (token: string): Promise<{ message: str
   const response = await api.post<SuccessResponse<unknown>>(`/users/confirm-reactivation/${encodeURIComponent(token)}`);
   return { message: response.data.message || "Account reactivated successfully" };
 };
+
+/**
+ * Upload profile picture
+ * Endpoint: POST /api/users/me/profile-picture
+ */
+export const uploadProfilePicture = async (file: File): Promise<{ profilePictureUrl: string }> => {
+  const formData = new FormData();
+  formData.append("profilePicture", file);
+  
+  const response = await api.post<SuccessResponse<{ profilePictureUrl: string }>>(
+    "/users/me/profile-picture", 
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+  return response.data.data;
+};
+
+/**
+ * Remove profile picture
+ * Endpoint: DELETE /api/users/me/profile-picture
+ */
+export const removeProfilePicture = async (): Promise<{ message: string }> => {
+  const response = await api.delete<SuccessResponse<unknown>>("/users/me/profile-picture");
+  return { message: response.data.message || "Profile picture removed successfully" };
+};

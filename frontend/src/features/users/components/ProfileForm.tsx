@@ -6,6 +6,7 @@ import {
   CircularProgress,
   Divider,
   Paper,
+  Snackbar,
   TextField,
   Typography,
 } from "@mui/material";
@@ -24,6 +25,7 @@ interface ProfileFormProps {
 export const ProfileForm = ({ profile, onSuccess }: ProfileFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const {
     control,
@@ -59,6 +61,7 @@ export const ProfileForm = ({ profile, onSuccess }: ProfileFormProps) => {
     setError(null);
     try {
       await updateUserProfile(data);
+      setSuccessMsg("Profile updated successfully!");
       onSuccess();
     } catch (err) {
       const message = handleApiError(err);
@@ -74,22 +77,25 @@ export const ProfileForm = ({ profile, onSuccess }: ProfileFormProps) => {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
+        p: { xs: 2.5, sm: 3.5 },
         borderRadius: 4,
         border: "1px solid rgba(0,0,0,0.06)",
-        bgcolor: "rgba(255, 255, 255, 0.7)",
+        bgcolor: "rgba(255, 255, 255, 0.85)",
         backdropFilter: "blur(24px)",
         boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
       }}
     >
-      <Typography variant="h6" color="#1E293B" sx={{ fontWeight: 800, mb: 3 }}>
+      <Typography variant="h6" color="#1E293B" sx={{ fontWeight: 800, mb: 0.5 }}>
         Profile Information
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Update your personal details and contact information.
       </Typography>
 
       {error && (
         <Alert
           severity="error"
-          sx={{ mb: 3, borderRadius: 2 }}
+          sx={{ mb: 2.5, borderRadius: 2 }}
           onClose={() => setError(null)}
         >
           {error}
@@ -99,7 +105,13 @@ export const ProfileForm = ({ profile, onSuccess }: ProfileFormProps) => {
       <Box
         component="form"
         onSubmit={handleSubmit(onFormSubmit)}
-        sx={{ display: "grid", gap: 2.5 }}
+        sx={{
+          display: "grid",
+          gap: 2,
+          maxWidth: { xs: "100%", sm: 520 },
+          mx: "auto",
+          width: "100%",
+        }}
       >
         <Controller
           name="name"
@@ -174,9 +186,9 @@ export const ProfileForm = ({ profile, onSuccess }: ProfileFormProps) => {
           )}
         />
 
-        <Divider sx={{ my: 1 }} />
+        <Divider sx={{ my: 2 }} />
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, pt: 1 }}>
           <Button
             variant="outlined"
             onClick={() => reset()}
@@ -191,9 +203,11 @@ export const ProfileForm = ({ profile, onSuccess }: ProfileFormProps) => {
             startIcon={submitting ? <CircularProgress size={16} /> : null}
             sx={{
               minWidth: 120,
-              background: "linear-gradient(135deg, #0F8B6C 0%, #0A6B59 100%)",
+              background:
+                "linear-gradient(135deg, #0F8B6C 0%, #0A6B59 100%)",
               "&:hover": {
-                background: "linear-gradient(135deg, #0A6B59 0%, #064E3B 100%)",
+                background:
+                  "linear-gradient(135deg, #0A6B59 0%, #064E3B 100%)",
               },
             }}
           >
@@ -201,6 +215,22 @@ export const ProfileForm = ({ profile, onSuccess }: ProfileFormProps) => {
           </Button>
         </Box>
       </Box>
+
+      <Snackbar
+        open={!!successMsg}
+        autoHideDuration={6000}
+        onClose={() => setSuccessMsg(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSuccessMsg(null)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%", borderRadius: 2 }}
+        >
+          {successMsg}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };

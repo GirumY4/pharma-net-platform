@@ -1,5 +1,6 @@
 // src/components/layout/SaaSLayout.tsx
 import {
+  AdminPanelSettings as AdminIcon,
   Dashboard as DashboardIcon,
   Inventory2Outlined as InventoryIcon,
   Logout,
@@ -34,6 +35,7 @@ import { alpha } from "@mui/material/styles";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
+import { API_BASE_URL } from "../../services/api";
 import type { IUser } from "../../types";
 
 const TOP_BAR_HEIGHT = 72;
@@ -133,6 +135,15 @@ export const SaaSLayout = () => {
     { text: "Inventory", icon: <InventoryIcon />, path: "/inventory" },
     { text: "Orders", icon: <OrdersIcon />, path: "/orders" },
     { text: "Reports", icon: <ReportsIcon />, path: "/reports" },
+    ...(user?.role === "admin"
+      ? [
+          {
+            text: "User Management",
+            icon: <AdminIcon />,
+            path: "/admin/users",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -290,6 +301,11 @@ export const SaaSLayout = () => {
                 })}
               >
                 <Avatar
+                  src={
+                    user?.profilePictureUrl
+                      ? `${API_BASE_URL.replace("/api", "")}${user.profilePictureUrl}`
+                      : undefined
+                  }
                   sx={{
                     bgcolor: "primary.main",
                     width: 36,

@@ -101,6 +101,63 @@ export const getMe = async (
   }
 };
 
+// @desc    Update logged in user profile
+// @route   PATCH /api/users/me
+// @access  Private (All Roles)
+export const updateMe = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.user) {
+      const error = new Error("User not authenticated") as any;
+      error.statusCode = 401;
+      return next(error);
+    }
+
+    // Fields that can be updated
+    const { name, phoneNumber, address, city, location } = req.body;
+
+    const user = await User.findById(req.user.userId);
+    if (!user || user.isDeleted) {
+      const error = new Error("User not found") as any;
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    const oldData = sanitizeUser(user);
+
+    if (name) user.name = name;
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+    if (address !== undefined) user.address = address;
+    if (city !== undefined) user.city = city;
+    if (location !== undefined) user.location = location;
+
+    await user.save();
+
+    await logAction(
+      req,
+      "UPDATE",
+      "User",
+      user._id.toString(),
+      oldData,
+      sanitizeUser(user),
+    );
+
+    const updatedUser = await User.findById(req.user.userId).select(
+      "-passwordHash -isDeleted -deletedAt",
+    );
+
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get all users (with pagination)
 // @route   GET /api/users
 // @access  Private/Admin
@@ -403,7 +460,8 @@ export const deactivateMe = async (
 
       res.status(200).json({
         success: true,
-        message: "A confirmation email has been sent to your registered email address.",
+        message:
+          "A confirmation email has been sent to your registered email address.",
       });
     } catch (err) {
       user.deactivationToken = undefined;
@@ -624,6 +682,45 @@ export const confirmReactivation = async (
       success: true,
       message: "Account reactivated successfully. You can now log in.",
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Add this to your users.controller.ts
+/**
+ * PATCH /api/users/:id
+ * Update user details or status. Access: Admin only.
+ */
+export const updateUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { name, role, isActive } = req.body;
+
+    // Fetch user
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          error: { code: "NOT_FOUND", message: "User not found." },
+        });
+    }
+
+    // Update fields if provided
+    if (name !== undefined) user.name = name;
+    if (role !== undefined) user.role = role;
+    if (isActive !== undefined) user.isActive = isActive;
+
+    await user.save();
+
+    res
+      .status(200)
+      .json({ success: true, message: "User updated successfully.", user });
   } catch (error) {
     next(error);
   }

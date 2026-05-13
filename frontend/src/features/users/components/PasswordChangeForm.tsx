@@ -8,6 +8,7 @@ import {
   IconButton,
   InputAdornment,
   Paper,
+  Snackbar,
   TextField,
   Typography,
 } from "@mui/material";
@@ -22,12 +23,15 @@ interface PasswordChangeFormProps {
   onSuccess: () => void;
 }
 
-export const PasswordChangeForm = ({ onSuccess }: PasswordChangeFormProps) => {
+export const PasswordChangeForm = ({
+  onSuccess,
+}: PasswordChangeFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const {
     control,
@@ -52,6 +56,7 @@ export const PasswordChangeForm = ({ onSuccess }: PasswordChangeFormProps) => {
     try {
       await changePassword(data);
       reset();
+      setSuccessMsg("Password changed successfully!");
       onSuccess();
     } catch (err) {
       const message = handleApiError(err);
@@ -65,22 +70,25 @@ export const PasswordChangeForm = ({ onSuccess }: PasswordChangeFormProps) => {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
+        p: { xs: 2.5, sm: 3.5 },
         borderRadius: 4,
         border: "1px solid rgba(0,0,0,0.06)",
-        bgcolor: "rgba(255, 255, 255, 0.7)",
+        bgcolor: "rgba(255, 255, 255, 0.85)",
         backdropFilter: "blur(24px)",
         boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
       }}
     >
-      <Typography variant="h6" color="#1E293B" sx={{ fontWeight: 800, mb: 3 }}>
+      <Typography variant="h6" color="#1E293B" sx={{ fontWeight: 800, mb: 0.5 }}>
         Change Password
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Update your current password to keep your account secure.
       </Typography>
 
       {error && (
         <Alert
           severity="error"
-          sx={{ mb: 3, borderRadius: 2 }}
+          sx={{ mb: 2.5, borderRadius: 2 }}
           onClose={() => setError(null)}
         >
           {error}
@@ -90,7 +98,13 @@ export const PasswordChangeForm = ({ onSuccess }: PasswordChangeFormProps) => {
       <Box
         component="form"
         onSubmit={handleSubmit(onFormSubmit)}
-        sx={{ display: "grid", gap: 2.5 }}
+        sx={{
+          display: "grid",
+          gap: 2,
+          maxWidth: { xs: "100%", sm: 520 },
+          mx: "auto",
+          width: "100%",
+        }}
       >
         <Controller
           name="currentPassword"
@@ -210,7 +224,7 @@ export const PasswordChangeForm = ({ onSuccess }: PasswordChangeFormProps) => {
           )}
         />
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, pt: 1 }}>
           <Button
             variant="outlined"
             onClick={() => reset()}
@@ -225,9 +239,11 @@ export const PasswordChangeForm = ({ onSuccess }: PasswordChangeFormProps) => {
             startIcon={submitting ? <CircularProgress size={16} /> : null}
             sx={{
               minWidth: 120,
-              background: "linear-gradient(135deg, #0F8B6C 0%, #0A6B59 100%)",
+              background:
+                "linear-gradient(135deg, #0F8B6C 0%, #0A6B59 100%)",
               "&:hover": {
-                background: "linear-gradient(135deg, #0A6B59 0%, #064E3B 100%)",
+                background:
+                  "linear-gradient(135deg, #0A6B59 0%, #064E3B 100%)",
               },
             }}
           >
@@ -235,6 +251,22 @@ export const PasswordChangeForm = ({ onSuccess }: PasswordChangeFormProps) => {
           </Button>
         </Box>
       </Box>
+
+      <Snackbar
+        open={!!successMsg}
+        autoHideDuration={6000}
+        onClose={() => setSuccessMsg(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSuccessMsg(null)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%", borderRadius: 2 }}
+        >
+          {successMsg}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };

@@ -175,6 +175,7 @@ export const login = async (
           _id: user._id,
           name: user.name,
           role: user.role,
+          profilePictureUrl: user.profilePictureUrl,
         },
       },
     });
@@ -426,6 +427,138 @@ export const resetPassword = async (
       success: true,
       message: "Password reset successfully.",
       data: { token },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/change-password
+ * Changes the authenticated user's password and sends an HTML email notification.
+ */
+export const changePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      const error = new Error("User not authenticated") as any;
+      error.statusCode = 401;
+      return next(error);
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      const error = new Error("VALIDATION_ERROR: Please provide current and new passwords.") as any;
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const user = await User.findById(req.user.userId);
+
+    if (!user || user.isDeleted) {
+      const error = new Error("NOT_FOUND: User not found.") as any;
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isMatch = await comparePassword(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      const error = new Error("INVALID_CREDENTIALS: The current password you entered is incorrect.") as any;
+      error.statusCode = 401;
+      throw error;
+    }
+
+    user.passwordHash = await hashPassword(newPassword);
+    await user.save();
+
+    await logAction(req, "UPDATE", "User", user._id.toString(), null, {
+      note: "Password was changed by user",
+    });
+
+    const escapedUserName = user.name
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+    const htmlMessage = `
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pharma-Net Password Changed</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#F8FAFC; font-family:'Inter', Arial, sans-serif; color:#001E2B;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC; padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px; background-color:#FFFFFF; border-radius:18px; overflow:hidden; border:1px solid #E5E7EB; box-shadow:0 20px 45px rgba(0, 30, 43, 0.10);">
+            <tr>
+              <td style="background-color:#00684A; padding:34px 36px;">
+                <div style="display:inline-block; width:44px; height:44px; line-height:44px; text-align:center; border-radius:12px; background-color:#00ED64; color:#001E2B; font-size:26px; font-weight:800;">✓</div>
+                <div style="margin-top:16px; color:#FFFFFF; font-size:26px; line-height:1.2; font-weight:800;">Pharma-Net</div>
+                <div style="margin-top:6px; color:rgba(255,255,255,0.76); font-size:14px; line-height:1.6;">Account security alert</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:38px 36px 18px;">
+                <p style="margin:0 0 12px; color:#00684A; font-size:13px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;">Security Update</p>
+                <h1 style="margin:0 0 18px; color:#001E2B; font-size:30px; line-height:1.18; font-weight:800;">Password Changed Successfully</h1>
+                <p style="margin:0 0 18px; color:#334155; font-size:16px; line-height:1.7;">Hello ${escapedUserName},</p>
+                <p style="margin:0; color:#334155; font-size:16px; line-height:1.7;">This email is to confirm that the password for your Pharma-Net account was recently changed. You can now use your new password to log in to the platform.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 36px 30px;">
+                <div style="background-color:#FFFBEB; border-left:4px solid #DDAA4A; border-radius:12px; padding:18px 20px;">
+                  <p style="margin:0 0 8px; color:#8A5F16; font-size:15px; line-height:1.6; font-weight:800;">Did you make this change?</p>
+                  <p style="margin:0; color:#8A5F16; font-size:14px; line-height:1.7;">If you performed this action, you can safely ignore this email. However, if you did not change your password, please contact your system administrator immediately to secure your account.</p>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color:#F8FAFC; padding:22px 36px; border-top:1px solid #E5E7EB;">
+                <p style="margin:0; color:#64748B; font-size:12px; line-height:1.7;">This is an automated security notification from the Pharma-Net Security Team. Please do not reply directly to this email.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+    const plainTextMessage = `Hello ${user.name},
+
+This email is to confirm that the password for your Pharma-Net account was recently changed.
+
+If you performed this action, you can safely ignore this email. However, if you did not change your password, please contact your system administrator immediately to secure your account.
+
+Thank you,
+The Pharma-Net Security Team
+
+This is an automated message. Please do not reply directly to this email.`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Pharma-Net Password Changed Successfully",
+        message: plainTextMessage,
+        html: htmlMessage,
+      });
+    } catch (err) {
+      console.warn("Could not send password change confirmation email", err);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully.",
     });
   } catch (error) {
     next(error);

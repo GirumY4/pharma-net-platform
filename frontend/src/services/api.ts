@@ -7,7 +7,7 @@ import axios, {
 } from "axios";
 import type { ApiError, ApiResponse, ErrorResponse } from "../types";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 type ApiClientError = Error & {

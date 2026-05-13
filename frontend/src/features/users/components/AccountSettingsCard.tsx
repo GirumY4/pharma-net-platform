@@ -62,12 +62,15 @@ export const AccountSettingsCard = ({
       <Paper
         elevation={0}
         sx={{
-          p: 3,
+          p: { xs: 2.5, sm: 3 },
           borderRadius: 4,
           border: "1px solid rgba(0,0,0,0.06)",
-          bgcolor: "rgba(255, 255, 255, 0.7)",
+          bgcolor: "rgba(255, 255, 255, 0.85)",
           backdropFilter: "blur(24px)",
           boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.5 }}>
@@ -363,9 +366,11 @@ export const AccountSettingsCard = ({
             disabled={deactivating}
             startIcon={deactivating ? <CircularProgress size={16} /> : null}
             sx={{
-              background: "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)",
+              background:
+                "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)",
               "&:hover": {
-                background: "linear-gradient(135deg, #B91C1C 0%, #991B1B 100%)",
+                background:
+                  "linear-gradient(135deg, #B91C1C 0%, #991B1B 100%)",
               },
             }}
           >
