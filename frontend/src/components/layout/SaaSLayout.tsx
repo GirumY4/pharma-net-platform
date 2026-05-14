@@ -309,7 +309,7 @@ export const SaaSLayout = () => {
                 <Avatar
                   src={
                     user?.profilePictureUrl
-                      ? `${API_BASE_URL.replace("/api", "")}${user.profilePictureUrl}`
+                      ? `${API_BASE_URL.replace(/\/api\/?$/, "")}${user.profilePictureUrl}`
                       : undefined
                   }
                   sx={{

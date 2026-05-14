@@ -38,11 +38,50 @@ export const fetchDashboardReport = async (
   if (limits?.lowStockLimit)
     params.lowStockLimit = limits.lowStockLimit.toString();
 
-  const response = await api.get<SuccessResponse<DashboardReport>>(
+  const response = await api.get<SuccessResponse<any>>(
     "/reports/dashboard",
     { params },
   );
-  return response.data.data;
+
+  const raw = response.data.data;
+
+  // Normalize the backend response to match our DashboardReport type
+  return {
+    pharmacyId: raw.pharmacyId,
+    generatedAt: raw.generatedAt,
+    startDate: raw.startDate,
+    endDate: raw.endDate,
+    totalRevenue: raw.totalRevenue ?? 0,
+    totalOrders: raw.totalOrders ?? 0,
+    averageOrderValue: raw.averageOrderValue ?? 0,
+    fulfillmentRate: raw.fulfillmentRate ?? 0,
+    lowStockCount: raw.lowStockCount ?? 0,
+    nearExpiryCount: raw.nearExpiryCount ?? 0,
+    // Map revenueTrend: backend sends { date, label, revenue, orders }
+    // Frontend expects { date, revenue, orderCount }
+    revenueTrend: (raw.revenueTrend ?? []).map(
+      (point: { date: string; revenue: number; orders?: number; orderCount?: number }) => ({
+        date: point.date,
+        revenue: point.revenue ?? 0,
+        orderCount: point.orders ?? point.orderCount ?? 0,
+      }),
+    ),
+    ordersByStatus: raw.ordersByStatus ?? {},
+    // Map topMedicines: backend may not return category
+    topMedicines: (raw.topMedicines ?? []).map(
+      (med: { name: string; sku: string; category?: string; qtySold: number; revenue: number }) => ({
+        name: med.name ?? "Unknown",
+        sku: med.sku ?? "",
+        category: med.category ?? "",
+        qtySold: med.qtySold ?? 0,
+        revenue: med.revenue ?? 0,
+      }),
+    ),
+    stockHealth: raw.stockHealth ?? { healthy: 0, low: 0, critical: 0, out: 0 },
+    expiringBatches: raw.expiringBatches ?? [],
+    // Use the flattened recentTransactions from backend (has medicineName directly)
+    recentTransactions: raw.recentTransactions ?? [],
+  };
 };
 
 /**

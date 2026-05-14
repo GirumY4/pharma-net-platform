@@ -5,7 +5,7 @@ import {
   TrendingUp,
   WarningAmberOutlined,
 } from "@mui/icons-material";
-import { Alert, Box, Grid, Typography } from "@mui/material";
+import { Alert, Box, Grid, Snackbar, Typography } from "@mui/material";
 import { useCallback, useState } from "react";
 import { useAuth } from "../../../contexts/useAuth";
 import { handleApiError } from "../../../utils/errorMapper";
@@ -30,6 +30,17 @@ export const ReportsPage = () => {
     preset: "7d",
   });
 
+  // Snackbar state for export feedback
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "info";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
   const { report, loading, error, updateDateRange } = useReports(
     dateRange,
     true,
@@ -46,6 +57,12 @@ export const ReportsPage = () => {
   const handleExport = useCallback(
     async (format: "csv" | "pdf") => {
       try {
+        setSnackbar({
+          open: true,
+          message: `Generating ${format.toUpperCase()} report...`,
+          severity: "info",
+        });
+
         const blob = await exportReport({
           format,
           reportType: "dashboard",
@@ -60,9 +77,15 @@ export const ReportsPage = () => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+
+        setSnackbar({
+          open: true,
+          message: `${format.toUpperCase()} report downloaded successfully.`,
+          severity: "success",
+        });
       } catch (err) {
         const message = handleApiError(err);
-        alert(message);
+        setSnackbar({ open: true, message, severity: "error" });
       }
     },
     [dateRange],
@@ -94,7 +117,6 @@ export const ReportsPage = () => {
             title="Total Revenue"
             value={report ? `ETB ${report.totalRevenue.toLocaleString()}` : "—"}
             subtitle={report ? `${report.totalOrders} orders` : ""}
-            trend={report ? { value: 12, direction: "up" } : undefined}
             icon={<TrendingUp sx={{ color: "#0F8B6C" }} />}
             colorGlow="#00ED64"
           />
@@ -104,7 +126,6 @@ export const ReportsPage = () => {
             title="Avg. Order Value"
             value={report ? `ETB ${report.averageOrderValue.toFixed(2)}` : "—"}
             subtitle="Per completed order"
-            trend={report ? { value: 5, direction: "up" } : undefined}
             icon={<Assessment sx={{ color: "#DDAA4A" }} />}
             colorGlow="#F5D796"
           />
@@ -124,11 +145,6 @@ export const ReportsPage = () => {
             title="Low Stock Alerts"
             value={report?.lowStockCount ?? 0}
             subtitle="Items below reorder threshold"
-            trend={
-              report?.lowStockCount === 0
-                ? { value: 0, direction: "neutral" }
-                : undefined
-            }
             icon={<WarningAmberOutlined sx={{ color: "#D97706" }} />}
             colorGlow="#F59E0B"
           />
@@ -214,6 +230,23 @@ export const ReportsPage = () => {
             </Typography>
           </Alert>
         )}
+
+      {/* MUI Snackbar for export notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

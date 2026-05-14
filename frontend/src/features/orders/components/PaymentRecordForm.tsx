@@ -1,5 +1,5 @@
 // src/features/orders/components/PaymentRecordForm.tsx
-import { Close, InfoOutlined, Payments } from "@mui/icons-material";
+import { Close, InfoOutlined, Payments, AccountBalance, PhoneIphone } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -274,9 +274,21 @@ export const PaymentRecordForm = ({
                 label="Payment Method *"
                 disabled={isSubmitting}
               >
-                <MenuItem value="cash">💵 Cash</MenuItem>
-                <MenuItem value="bank_transfer">🏦 Bank Transfer</MenuItem>
-                <MenuItem value="mobile_money">📱 Mobile Money</MenuItem>
+                <MenuItem value="cash">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Payments fontSize="small" color="action" /> Cash
+                  </Box>
+                </MenuItem>
+                <MenuItem value="bank_transfer">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AccountBalance fontSize="small" color="action" /> Bank Transfer
+                  </Box>
+                </MenuItem>
+                <MenuItem value="mobile_money">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PhoneIphone fontSize="small" color="action" /> Mobile Money
+                  </Box>
+                </MenuItem>
               </Select>
             </FormControl>
           )}

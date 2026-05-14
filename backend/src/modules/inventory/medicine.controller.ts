@@ -115,6 +115,219 @@ export const createMedicine = async (
 };
 
 /**
+ * PATCH /api/medicines/:id
+ * Update medicine metadata – tenant-scoped
+ */
+export const updateMedicine = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const id = req.params.id as string;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      const err: any = new Error("VALIDATION_ERROR: Invalid medicine id.");
+      err.statusCode = 400;
+      err.code = "INVALID_OBJECT_ID";
+      throw err;
+    }
+
+    // Tenant isolation
+    let pharmacyId: string;
+    if (req.user?.role === "pharmacy_manager") {
+      pharmacyId = req.user.pharmacyId!;
+    } else if (req.user?.role === "admin") {
+      pharmacyId = req.body.pharmacyId || (req.query.pharmacyId as string);
+      if (!pharmacyId) {
+        const err: any = new Error(
+          "VALIDATION_ERROR: pharmacyId is required for admin",
+        );
+        err.statusCode = 400;
+        throw err;
+      }
+    } else {
+      const err: any = new Error("FORBIDDEN");
+      err.statusCode = 403;
+      throw err;
+    }
+
+    const medicine = await Medicine.findOne({
+      _id: id,
+      pharmacyId,
+      isDeleted: false,
+    }).session(session);
+
+    if (!medicine) {
+      const err: any = new Error(
+        "MEDICINE_NOT_FOUND: Medicine not found in your catalog.",
+      );
+      err.statusCode = 404;
+      err.code = "MEDICINE_NOT_FOUND";
+      throw err;
+    }
+
+    const previousState = medicine.toObject();
+
+    // Allowed update fields
+    const {
+      name,
+      sku,
+      genericName,
+      category,
+      description,
+      unitPrice,
+      unitOfMeasure,
+      reorderThreshold,
+    } = req.body;
+
+    // If SKU is being changed, check uniqueness per pharmacy
+    if (sku && sku !== medicine.sku) {
+      const existing = await Medicine.findOne({
+        sku,
+        pharmacyId,
+        _id: { $ne: id },
+        isDeleted: false,
+      }).session(session);
+      if (existing) {
+        const err: any = new Error(
+          `SKU_EXISTS: Medicine with SKU ${sku} already exists in this pharmacy's catalog.`,
+        );
+        err.statusCode = 409;
+        err.code = "SKU_EXISTS";
+        throw err;
+      }
+    }
+
+    // Apply updates only for provided fields
+    if (name !== undefined) medicine.name = name;
+    if (sku !== undefined) medicine.sku = sku;
+    if (genericName !== undefined) medicine.genericName = genericName;
+    if (category !== undefined) medicine.category = category;
+    if (description !== undefined) medicine.description = description;
+    if (unitPrice !== undefined) medicine.unitPrice = unitPrice;
+    if (unitOfMeasure !== undefined) medicine.unitOfMeasure = unitOfMeasure;
+    if (reorderThreshold !== undefined)
+      medicine.reorderThreshold = reorderThreshold;
+
+    await medicine.save({ session });
+
+    await logAction(
+      req,
+      "UPDATE",
+      "Medicine",
+      medicine._id.toString(),
+      previousState,
+      medicine.toObject(),
+      session,
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({
+      success: true,
+      message: "Medicine updated successfully.",
+      data: medicine,
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/medicines/:id
+ * Soft-delete a medicine – tenant-scoped
+ */
+export const deleteMedicine = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const id = req.params.id as string;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      const err: any = new Error("VALIDATION_ERROR: Invalid medicine id.");
+      err.statusCode = 400;
+      err.code = "INVALID_OBJECT_ID";
+      throw err;
+    }
+
+    // Tenant isolation
+    let pharmacyId: string;
+    if (req.user?.role === "pharmacy_manager") {
+      pharmacyId = req.user.pharmacyId!;
+    } else if (req.user?.role === "admin") {
+      pharmacyId = req.body.pharmacyId || (req.query.pharmacyId as string);
+      if (!pharmacyId) {
+        const err: any = new Error(
+          "VALIDATION_ERROR: pharmacyId is required for admin",
+        );
+        err.statusCode = 400;
+        throw err;
+      }
+    } else {
+      const err: any = new Error("FORBIDDEN");
+      err.statusCode = 403;
+      throw err;
+    }
+
+    const medicine = await Medicine.findOne({
+      _id: id,
+      pharmacyId,
+      isDeleted: false,
+    }).session(session);
+
+    if (!medicine) {
+      const err: any = new Error(
+        "MEDICINE_NOT_FOUND: Medicine not found in your catalog.",
+      );
+      err.statusCode = 404;
+      err.code = "MEDICINE_NOT_FOUND";
+      throw err;
+    }
+
+    const previousState = medicine.toObject();
+
+    // Soft delete
+    medicine.isDeleted = true;
+    medicine.deletedAt = new Date();
+    await medicine.save({ session });
+
+    await logAction(
+      req,
+      "DELETE",
+      "Medicine",
+      medicine._id.toString(),
+      previousState,
+      medicine.toObject(),
+      session,
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({
+      success: true,
+      message: "Medicine deleted successfully.",
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    next(error);
+  }
+};
+
+/**
  * GET /api/medicines
  * Tenant-scoped list (Pharmacy Manager / Admin)
  */

@@ -1,4 +1,5 @@
 // src/features/orders/components/StatusStepper.tsx
+import { Cancel } from "@mui/icons-material";
 import { Box, Step, StepLabel, Stepper, Typography } from "@mui/material";
 import { STATUS_CONFIG } from "../constants";
 import type { OrderStatus } from "../types";
@@ -111,8 +112,8 @@ export const StatusStepper = ({ currentStatus }: StatusStepperProps) => {
             border: "1px solid #FCA5A5",
           }}
         >
-          <Typography variant="body2" color="#DC2626" sx={{ fontWeight: 600 }}>
-            ❌ Order Rejected
+          <Typography variant="body2" color="#DC2626" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Cancel fontSize="small" /> Order Rejected
           </Typography>
         </Box>
       )}

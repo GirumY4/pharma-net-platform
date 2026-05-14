@@ -5,6 +5,7 @@ import {
   Close,
   Home,
   LocalShipping,
+  InfoOutlined,
 } from "@mui/icons-material";
 import {
   Alert,
@@ -23,6 +24,10 @@ import {
   ListItemText,
   Stack,
   Typography,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
 } from "@mui/material";
 import { useState } from "react";
 import { handleApiError } from "../../../utils/errorMapper";
@@ -300,13 +305,15 @@ export const OrderDetailDrawer = ({
               Payment Status
             </Typography>
             <StatusChip status={order.status} showTooltip={false} />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              {order.paymentStatus === "paid"
-                ? "✓ Fully paid"
-                : order.paymentStatus === "partially_paid"
-                  ? "⚠ Partially paid"
-                  : "○ Unpaid"}
-            </Typography>
+            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+              {order.paymentStatus === "paid" ? (
+                <><CheckCircle fontSize="small" sx={{ color: "success.main" }} /> <Typography variant="body2">Fully paid</Typography></>
+              ) : order.paymentStatus === "partially_paid" ? (
+                <><InfoOutlined fontSize="small" sx={{ color: "warning.main" }} /> <Typography variant="body2">Partially paid</Typography></>
+              ) : (
+                <><Cancel fontSize="small" sx={{ color: "text.disabled" }} /> <Typography variant="body2">Unpaid</Typography></>
+              )}
+            </Box>
           </Box>
 
           {/* Status History Timeline */}
@@ -318,71 +325,61 @@ export const OrderDetailDrawer = ({
           </Typography>
           <Box sx={{ mb: 4 }}>
             {order.statusHistory && order.statusHistory.length > 0 ? (
-              <List sx={{ p: 0 }}>
+              <Stepper orientation="vertical" sx={{ ml: 1 }}>
                 {order.statusHistory.map((event, idx) => (
-                  <ListItem
-                    key={idx}
-                    sx={{
-                      px: 0,
-                      py: 1,
-                      alignItems: "flex-start",
-                      borderLeft: "2px solid rgba(15, 139, 108, 0.2)",
-                      ml: 1,
-                      pl: 3,
-                      position: "relative",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        left: -6,
-                        top: 12,
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        bgcolor: idx === 0 ? "#0F8B6C" : "rgba(15, 139, 108, 0.4)",
-                        border: "2px solid white",
-                      },
-                    }}
-                  >
-                    <ListItemText
-                      primary={
-                        <Stack
-                          direction="row"
-                          sx={{ justifyContent: "space-between", alignItems: "center" }}
+                  <Step key={idx} active={true}>
+                    <StepLabel
+                      icon={
+                        <Box
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            display: 'grid',
+                            placeItems: 'center',
+                            bgcolor: idx === 0 ? '#0F8B6C' : 'rgba(15, 139, 108, 0.1)',
+                            color: idx === 0 ? 'white' : '#0F8B6C',
+                          }}
                         >
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                            {STATUS_CONFIG[event.status].label}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(event.changedAt).toLocaleString()}
-                          </Typography>
-                        </Stack>
-                      }
-                      secondary={
-                        <Box sx={{ mt: 0.5 }}>
-                          <Typography variant="caption" sx={{ display: "block", color: "text.primary", fontWeight: 600 }}>
-                            By {event.changedBy.name}
-                          </Typography>
-                          {event.note && (
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                mt: 0.5,
-                                fontStyle: "italic",
-                                color: "text.secondary",
-                                bgcolor: "rgba(0,0,0,0.03)",
-                                p: 1,
-                                borderRadius: 1,
-                              }}
-                            >
-                              "{event.note}"
-                            </Typography>
-                          )}
+                          {STATUS_CONFIG[event.status]?.icon || <InfoOutlined fontSize="small" />}
                         </Box>
                       }
-                    />
-                  </ListItem>
+                    >
+                      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: idx === 0 ? 'text.primary' : 'text.secondary' }}>
+                          {STATUS_CONFIG[event.status]?.label || event.status}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(event.changedAt).toLocaleString()}
+                        </Typography>
+                      </Stack>
+                    </StepLabel>
+                    <StepContent sx={{ borderLeft: idx === order.statusHistory.length - 1 ? 'none' : '1px solid rgba(15, 139, 108, 0.2)' }}>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" sx={{ display: "block", color: "text.primary", fontWeight: 600 }}>
+                          By {event.changedBy.name}
+                        </Typography>
+                        {event.note && (
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              mt: 0.5,
+                              fontStyle: "italic",
+                              color: "text.secondary",
+                              bgcolor: "rgba(0,0,0,0.03)",
+                              p: 1.5,
+                              borderRadius: 1.5,
+                              borderLeft: "3px solid rgba(15, 139, 108, 0.5)"
+                            }}
+                          >
+                            "{event.note}"
+                          </Typography>
+                        )}
+                      </Box>
+                    </StepContent>
+                  </Step>
                 ))}
-              </List>
+              </Stepper>
             ) : (
               <Typography variant="body2" color="text.secondary">
                 No activity recorded yet.

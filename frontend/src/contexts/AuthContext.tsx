@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import type { ApiResponse, AuthUser, IUser, UserRole } from "../types";
 import { decodeJwtPayload } from "../utils/authToken";
 import { AuthContext, type AuthContextValue } from "./authContextBase";
+import api from "../services/api";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<IUser | AuthUser | null>(null);
@@ -78,14 +79,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshUser = async () => {
     if (!token) return;
     try {
-      const { default: api } = await import("../services/api");
-      const { data } = await api.get<ApiResponse<IUser>>("/users/me");
-      if (data.success) {
-        localStorage.setItem("user", JSON.stringify(data.data));
-        setUser(data.data);
+      // Use the existing api instance
+      const response = await api.get<ApiResponse<IUser>>("/users/me");
+      
+      if (response.data.success) {
+        const userData = response.data.data;
+        localStorage.setItem("user", JSON.stringify(userData));
+        setUser({ ...userData }); // Force re-render with new reference
       }
-    } catch {
-      // Keep the cached auth state when profile refresh is unavailable.
+    } catch (error) {
+      console.error("AuthContext: refreshUser failed", error);
     }
   };
 

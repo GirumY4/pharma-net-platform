@@ -2,6 +2,7 @@
 import crypto from "crypto";
 import type { NextFunction, Request, Response } from "express";
 import fs from "fs/promises";
+import fsSync from "fs";
 import mongoose, { type ClientSession } from "mongoose";
 import multer from "multer";
 import path from "path";
@@ -26,13 +27,15 @@ const sanitizeUser = (userDoc: any) => {
 
 // Configure Multer for profile picture uploads
 const storage = multer.diskStorage({
-  destination: async (
+  destination: (
     req: Request,
     file: Express.Multer.File,
     cb: (error: Error | null, destination: string) => void,
   ) => {
     const uploadDir = path.join(process.cwd(), "uploads", "profile-pictures");
-    await fs.mkdir(uploadDir, { recursive: true });
+    if (!fsSync.existsSync(uploadDir)) {
+      fsSync.mkdirSync(uploadDir, { recursive: true });
+    }
     cb(null, uploadDir);
   },
   filename: (
@@ -410,7 +413,14 @@ export const uploadProfilePicture = async (
 
       const oldPictureUrl = user.profilePictureUrl;
       user.profilePictureUrl = profilePictureUrl;
-      await user.save();
+      
+      // Explicitly mark the field as modified and save
+      user.markModified("profilePictureUrl");
+      const savedUser = await user.save();
+
+      if (!savedUser) {
+        throw new Error("DATABASE_SAVE_FAILED: Failed to update user profile picture in database.");
+      }
 
       if (oldPictureUrl && oldPictureUrl !== profilePictureUrl) {
         await deleteUploadedFile(oldPictureUrl);

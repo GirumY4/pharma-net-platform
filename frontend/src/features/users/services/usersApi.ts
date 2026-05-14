@@ -92,6 +92,11 @@ export const uploadProfilePicture = async (
   >(
     "/users/me/profile-picture",
     formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
   );
   return response.data.data;
 };

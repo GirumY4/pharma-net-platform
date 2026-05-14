@@ -158,15 +158,90 @@ export const getDashboardReport = async (
       lowStockLimit,
     });
 
+    const reportData = {
+      pharmacyId,
+      generatedAt: new Date(),
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      ...report,
+    };
+
+    // CSV export handling
+    if (req.query.export === "csv") {
+      const lines: string[] = [];
+
+      // KPI Summary
+      lines.push("=== Dashboard Report ===");
+      lines.push(`Generated At,${reportData.generatedAt}`);
+      lines.push(`Date Range,${reportData.startDate} to ${reportData.endDate}`);
+      lines.push("");
+      lines.push("=== Key Performance Indicators ===");
+      lines.push("Metric,Value");
+      lines.push(`Total Revenue,${reportData.totalRevenue}`);
+      lines.push(`Total Orders,${reportData.totalOrders}`);
+      lines.push(`Average Order Value,${reportData.averageOrderValue?.toFixed(2) || 0}`);
+      lines.push(`Fulfillment Rate,${reportData.fulfillmentRate || 0}%`);
+      lines.push(`Total Medicines,${reportData.totalMedicines}`);
+      lines.push(`Low Stock Count,${reportData.lowStockCount}`);
+      lines.push(`Near Expiry Count,${reportData.nearExpiryCount || 0}`);
+      lines.push(`Total Stock Value,${reportData.totalStockValue}`);
+      lines.push("");
+
+      // Revenue Trend
+      if (reportData.revenueTrend && reportData.revenueTrend.length > 0) {
+        lines.push("=== Revenue Trend ===");
+        lines.push("Date,Revenue,Orders");
+        for (const point of reportData.revenueTrend) {
+          lines.push(`${point.date},${point.revenue},${point.orders}`);
+        }
+        lines.push("");
+      }
+
+      // Top Medicines
+      if (reportData.topMedicines && reportData.topMedicines.length > 0) {
+        lines.push("=== Top Medicines ===");
+        lines.push("Name,SKU,Qty Sold,Revenue");
+        for (const med of reportData.topMedicines) {
+          lines.push(`"${med.name}",${med.sku},${med.qtySold},${med.revenue}`);
+        }
+        lines.push("");
+      }
+
+      // Expiring Batches
+      if (reportData.expiringBatches && reportData.expiringBatches.length > 0) {
+        lines.push("=== Expiring Batches ===");
+        lines.push("Medicine,SKU,Batch,Quantity,Expiry Date,Days Until Expiry");
+        for (const batch of reportData.expiringBatches) {
+          lines.push(
+            `"${batch.medicineName}",${batch.sku},${batch.batchNumber},${batch.quantity},${batch.expiryDate},${batch.daysUntilExpiry}`,
+          );
+        }
+        lines.push("");
+      }
+
+      // Recent Transactions
+      if (reportData.recentTransactions && reportData.recentTransactions.length > 0) {
+        lines.push("=== Recent Transactions ===");
+        lines.push("Type,Medicine,Batch,Qty Changed,Date,Reason");
+        for (const txn of reportData.recentTransactions) {
+          lines.push(
+            `${txn.transactionType},"${txn.medicineName}",${txn.batchNumber},${txn.quantityChanged},${txn.createdAt},${txn.reason || ""}`,
+          );
+        }
+      }
+
+      const csvContent = lines.join("\n");
+      const fileName = `dashboard-report-${startDate.toISOString().slice(0, 10)}-to-${endDate.toISOString().slice(0, 10)}.csv`;
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.status(200).send(csvContent);
+      return;
+    }
+
     res.status(200).json({
       success: true,
-      data: {
-        pharmacyId,
-        generatedAt: new Date(),
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        ...report,
-      },
+      data: reportData,
     });
   } catch (error: any) {
     if (!error.statusCode) error.statusCode = 500;

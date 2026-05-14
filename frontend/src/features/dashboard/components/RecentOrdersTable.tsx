@@ -258,7 +258,7 @@ export const RecentOrdersTable = ({
         </Alert>
       )}
       <TableContainer>
-        <Table>
+        <Table sx={{ minWidth: 600 }}>
           <TableHead
             sx={{
               bgcolor: "rgba(247, 250, 249, 0.78)",

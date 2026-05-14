@@ -142,6 +142,9 @@ export const InventoryPage = () => {
           : "Medicine added successfully",
         severity: "success",
       });
+    } catch (err) {
+      const message = handleApiError(err);
+      setSnackbar({ open: true, message, severity: "error" });
     } finally {
       setSubmitLoading(false);
     }

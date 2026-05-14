@@ -275,6 +275,8 @@ export const generateDashboardReport = async (
     recentInventoryTransactions,
     stockMovementRows,
     topMedicines,
+    stockHealthRows,
+    nearExpiryBatchCount,
   ] = await Promise.all([
     Medicine.aggregate([
       { $match: { pharmacyId: pharmacyObjectId, isDeleted: false } },
@@ -419,6 +421,69 @@ export const generateDashboardReport = async (
       { $sort: { revenue: -1 } },
       { $limit: 5 },
     ]),
+    // Stock health distribution
+    Medicine.aggregate([
+      { $match: { pharmacyId: pharmacyObjectId, isDeleted: false } },
+      {
+        $group: {
+          _id: null,
+          healthy: {
+            $sum: {
+              $cond: [
+                { $gte: ["$totalStock", { $multiply: ["$reorderThreshold", 1.5] }] },
+                1,
+                0,
+              ],
+            },
+          },
+          low: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $lt: ["$totalStock", { $multiply: ["$reorderThreshold", 1.5] }] },
+                    { $gte: ["$totalStock", "$reorderThreshold"] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          critical: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $lt: ["$totalStock", "$reorderThreshold"] },
+                    { $gt: ["$totalStock", 0] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          out: {
+            $sum: {
+              $cond: [{ $lte: ["$totalStock", 0] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]),
+    // Near-expiry batch count (within expiryWindowDays)
+    Medicine.aggregate([
+      { $match: { pharmacyId: pharmacyObjectId, isDeleted: false } },
+      { $unwind: "$batches" },
+      {
+        $match: {
+          "batches.expiryDate": { $lte: expiryCutoff, $gt: new Date() },
+          "batches.quantity": { $gt: 0 },
+        },
+      },
+      { $count: "count" },
+    ]),
   ]);
 
   const trendByDate = new Map<string, { revenue: number; orders: number }>();
@@ -497,6 +562,31 @@ export const generateDashboardReport = async (
   const fulfillmentRate =
     totalOrders > 0 ? Math.round((deliveredCount / totalOrders) * 100) : 0;
 
+  // Flatten recentInventoryTransactions to include medicineName directly
+  const recentTransactions = recentInventoryTransactions.map((txn: any) => ({
+    _id: txn._id,
+    transactionType: txn.transactionType,
+    medicineName:
+      typeof txn.medicineId === "object" && txn.medicineId
+        ? txn.medicineId.name
+        : "Unknown",
+    batchNumber: txn.batchNumber,
+    quantityChanged: txn.quantityChanged,
+    createdAt: txn.createdAt,
+    reason: txn.reason,
+  }));
+
+  const stockHealth = stockHealthRows[0] || {
+    healthy: 0,
+    low: 0,
+    critical: 0,
+    out: 0,
+  };
+  // Remove aggregation _id
+  delete stockHealth._id;
+
+  const nearExpiryCount = nearExpiryBatchCount[0]?.count || 0;
+
   return {
     totalMedicines: inventorySummary[0]?.totalMedicines || 0,
     lowStockCount: inventorySummary[0]?.lowStockCount || 0,
@@ -509,14 +599,17 @@ export const generateDashboardReport = async (
     totalOrders,
     averageOrderValue,
     fulfillmentRate,
+    nearExpiryCount,
     ordersByStatus,
     revenueTrend,
     stockMovement,
+    stockHealth,
     lowStockItems,
     topMedicines,
     recentOrders: cleanRecentOrders,
     expiringBatches,
     recentInventoryTransactions,
+    recentTransactions,
   };
 };
 

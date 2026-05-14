@@ -164,11 +164,11 @@ export const OrdersTable = ({
       sx={{
         borderRadius: 4,
         border: "1px solid rgba(0,0,0,0.06)",
-        overflow: "hidden",
+        overflowX: "auto",
         boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
       }}
     >
-      <Table>
+      <Table sx={{ minWidth: 800 }}>
         <TableHead sx={{ bgcolor: "rgba(0,0,0,0.02)" }}>
           <TableRow>
             <TableCell
