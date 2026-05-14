@@ -9,7 +9,7 @@ import {
   IconButton,
   InputLabel,
   MenuItem,
-  Paper,
+  Popover,
   Select,
   Slider,
   Stack,
@@ -21,6 +21,7 @@ import { CATEGORIES } from "../types";
 
 interface SmartFiltersSidebarProps {
   open: boolean;
+  anchorEl: HTMLElement | null;
   onClose: () => void;
   filters: {
     category?: string;
@@ -39,6 +40,7 @@ interface SmartFiltersSidebarProps {
 
 export const SmartFiltersSidebar = ({
   open,
+  anchorEl,
   onClose,
   filters,
   onFilterChange,
@@ -53,25 +55,41 @@ export const SmartFiltersSidebar = ({
   };
 
   return (
-    <Collapse in={open} orientation="horizontal" sx={{ width: "100%" }}>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2.5,
-          borderRadius: 3,
-          border: "1px solid rgba(0,0,0,0.06)",
-          bgcolor: "rgba(255, 255, 255, 0.7)",
-          backdropFilter: "blur(24px)",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
-          mb: 3,
-        }}
-      >
+    <Popover
+      open={open}
+      anchorEl={anchorEl}
+      onClose={onClose}
+      anchorOrigin={{
+        vertical: "bottom",
+        horizontal: "right",
+      }}
+      transformOrigin={{
+        vertical: "top",
+        horizontal: "right",
+      }}
+      slotProps={{
+        paper: {
+          elevation: 0,
+          sx: {
+            p: 3,
+            width: 340,
+            mt: 1.5,
+            borderRadius: 4,
+            border: "1px solid rgba(15, 139, 108, 0.08)",
+            bgcolor: "rgba(255, 255, 255, 0.98)",
+            backdropFilter: "blur(20px)",
+            boxShadow: "0 20px 48px rgba(18, 32, 28, 0.12)",
+          },
+        },
+      }}
+    >
+      <Box>
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            mb: 2,
+            mb: 2.5,
           }}
         >
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
@@ -270,7 +288,7 @@ export const SmartFiltersSidebar = ({
             Reset Filters
           </Button>
         </Box>
-      </Paper>
-    </Collapse>
+      </Box>
+    </Popover>
   );
 };

@@ -14,7 +14,7 @@ import { useGeolocation } from "../hooks/useGeolocation";
 
 interface MarketplaceHeroProps {
   onSearch: (query: string) => void;
-  onFilterToggle: () => void;
+  onFilterToggle: (event: React.MouseEvent<HTMLElement>) => void;
   onLocationUpdate: (lat: number, lng: number) => void;
 }
 
@@ -94,7 +94,7 @@ export const MarketplaceHero = ({
               display: "flex",
               alignItems: "center",
               bgcolor: "white",
-              borderRadius: 3,
+              borderRadius: 4,
               border: "1px solid rgba(23, 35, 31, 0.12)",
               boxShadow: "0 8px 32px rgba(18, 32, 28, 0.08)",
               px: 2,
@@ -151,7 +151,7 @@ export const MarketplaceHero = ({
               </IconButton>
               <IconButton
                 size="medium"
-                onClick={onFilterToggle}
+                onClick={(e) => onFilterToggle(e)}
                 title="Open filters"
                 sx={{
                   color: "text.secondary",

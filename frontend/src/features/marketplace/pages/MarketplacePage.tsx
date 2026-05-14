@@ -42,6 +42,9 @@ export const MarketplacePage = () => {
   const { isAuthenticated, role } = useAuth();
   const [filters, setFilters] = useState<MarketplaceFilters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
+  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(
+    null,
+  );
   const [selectedMedicine, setSelectedMedicine] =
     useState<MarketplaceMedicine | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -138,30 +141,36 @@ export const MarketplacePage = () => {
     [filters, runSearch],
   );
 
-  const handleViewDetails = useCallback(async (medicine: MarketplaceMedicine) => {
-    setSelectedMedicine(medicine);
-    setDetailsOpen(true);
-    setOrderQuantity(1);
-    setFulfillmentMethod("pickup");
-    setDeliveryAddress("");
-    setDetailsLoading(true);
+  const handleViewDetails = useCallback(
+    async (medicine: MarketplaceMedicine) => {
+      setSelectedMedicine(medicine);
+      setDetailsOpen(true);
+      setOrderQuantity(1);
+      setFulfillmentMethod("pickup");
+      setDeliveryAddress("");
+      setDetailsLoading(true);
 
-    try {
-      const details = await fetchMedicinePublicDetails(medicine.medicineId);
-      setSelectedMedicine(details);
-    } catch {
-      setToast({
-        open: true,
-        message: "Showing listing summary. Full details could not be loaded.",
-        severity: "info",
-      });
-    } finally {
-      setDetailsLoading(false);
-    }
-  }, []);
+      try {
+        const details = await fetchMedicinePublicDetails(medicine.medicineId);
+        setSelectedMedicine(details);
+      } catch {
+        setToast({
+          open: true,
+          message: "Showing listing summary. Full details could not be loaded.",
+          severity: "info",
+        });
+      } finally {
+        setDetailsLoading(false);
+      }
+    },
+    [],
+  );
 
   const handleGetDirections = useCallback(
-    (location: { lat: number; lng: number } | undefined, pharmacyName: string) => {
+    (
+      location: { lat: number; lng: number } | undefined,
+      pharmacyName: string,
+    ) => {
       if (!location) {
         setToast({
           open: true,
@@ -260,13 +269,17 @@ export const MarketplacePage = () => {
     <Box sx={{ minHeight: "100vh", bgcolor: "#F7FAF9" }}>
       <MarketplaceHero
         onSearch={handleSearch}
-        onFilterToggle={() => setShowFilters((open) => !open)}
+        onFilterToggle={(e) => {
+          setFilterAnchorEl(e.currentTarget);
+          setShowFilters(true);
+        }}
         onLocationUpdate={handleLocationUpdate}
       />
 
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
         <SmartFiltersSidebar
           open={showFilters}
+          anchorEl={filterAnchorEl}
           onClose={() => setShowFilters(false)}
           filters={{
             category: filters.category,
@@ -283,7 +296,11 @@ export const MarketplacePage = () => {
           loading={loading}
           error={error}
           searchQuery={
-            filters.name || filters.genericName || filters.category || filters.city || ""
+            filters.name ||
+            filters.genericName ||
+            filters.category ||
+            filters.city ||
+            ""
           }
           onViewDetails={handleViewDetails}
           onGetDirections={handleGetDirections}
@@ -300,6 +317,14 @@ export const MarketplacePage = () => {
         onClose={() => setDetailsOpen(false)}
         fullWidth
         maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 4,
+              boxShadow: "0 24px 64px rgba(0,0,0,0.12)",
+            },
+          },
+        }}
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Stack spacing={1}>
@@ -350,9 +375,17 @@ export const MarketplacePage = () => {
                   <Typography variant="body2" color="text.secondary">
                     Price
                   </Typography>
-                  <Typography variant="h6" color="#0F5E4D" sx={{ fontWeight: 800 }}>
+                  <Typography
+                    variant="h6"
+                    color="#0F5E4D"
+                    sx={{ fontWeight: 800 }}
+                  >
                     ETB {selectedMedicine.unitPrice.toFixed(2)}
-                    <Typography component="span" variant="caption" sx={{ ml: 0.5 }}>
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      sx={{ ml: 0.5 }}
+                    >
                       / {selectedMedicine.unitOfMeasure}
                     </Typography>
                   </Typography>
@@ -365,7 +398,8 @@ export const MarketplacePage = () => {
                     {selectedMedicine.pharmacyName}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {selectedMedicine.pharmacyAddress || selectedMedicine.pharmacyCity}
+                    {selectedMedicine.pharmacyAddress ||
+                      selectedMedicine.pharmacyCity}
                   </Typography>
                 </Box>
               </Stack>

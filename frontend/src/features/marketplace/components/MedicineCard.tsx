@@ -37,17 +37,17 @@ export const MedicineCard = ({
         elevation={0}
         sx={{
           p: 2.5,
-          borderRadius: 3,
+          borderRadius: 4,
           border: "1px solid rgba(0,0,0,0.06)",
           bgcolor: "rgba(255, 255, 255, 0.7)",
           backdropFilter: "blur(24px)",
           boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
-          transition: "transform 160ms ease, box-shadow 160ms ease",
+          transition: "transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease, border-color 200ms ease",
           cursor: "pointer",
           "&:hover": {
-            transform: "translateY(-4px)",
-            boxShadow: "0 16px 50px rgba(15, 139, 108, 0.12)",
-            borderColor: "primary.main",
+            transform: "translateY(-6px)",
+            boxShadow: "0 20px 60px rgba(15, 139, 108, 0.15)",
+            borderColor: "rgba(15, 139, 108, 0.4)",
           },
         }}
         onClick={() => onViewDetails(medicine)}
@@ -130,7 +130,7 @@ export const MedicineCard = ({
 
         {/* Pharmacy Info */}
         <Box sx={{ mb: 2 }}>
-<Stack
+          <Stack
              direction="row"
              spacing={1}
              sx={{ alignItems: "center", mb: 0.5 }}
