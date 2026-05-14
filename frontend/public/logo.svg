@@ -1,0 +1,41 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pharma-Net Icon">
+  <defs>
+    <linearGradient id="mainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D9488"/>
+      <stop offset="50%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064E3B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#022C22" flood-opacity="0.3"/>
+    </filter>
+    <filter id="innerGlow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <!-- Main shield/app icon -->
+    <rect x="15" y="15" width="90" height="90" rx="28" fill="url(#mainGrad)"/>
+    
+    <!-- Connection ring (the Net) -->
+    <circle cx="60" cy="60" r="32" fill="none" stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="2"/>
+    <circle cx="60" cy="60" r="24" fill="none" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1.5"/>
+    
+    <!-- Orbiting dots -->
+    <circle cx="60" cy="28" r="3" fill="#FCD34D"/>
+    <circle cx="92" cy="60" r="3" fill="#FCD34D"/>
+    <circle cx="60" cy="92" r="3" fill="#FCD34D"/>
+    <circle cx="28" cy="60" r="3" fill="#FCD34D"/>
+
+    <!-- Central cross -->
+    <path d="M 52 44 h 16 v 10 h 10 v 12 h -10 v 10 h -16 v -10 h -10 v -12 h 10 z" fill="#FFFFFF" filter="url(#innerGlow)"/>
+    
+    <!-- Center gold seal -->
+    <circle cx="60" cy="60" r="5" fill="url(#goldGrad)"/>
+  </g>
+</svg>

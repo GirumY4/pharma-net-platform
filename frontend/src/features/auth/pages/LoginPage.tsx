@@ -84,7 +84,7 @@ export const LoginPage = () => {
       const role = getRoleFromToken(response.token);
       switch (role) {
         case "admin":
-          navigate("/admin", { replace: true });
+          navigate("/admin/users", { replace: true });
           break;
         case "pharmacy_manager":
           navigate("/dashboard", { replace: true });

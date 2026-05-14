@@ -64,10 +64,10 @@ export const UserManagementPage = () => {
       else if (statusFilter === "inactive") params.isActive = false;
 
       const result = await fetchUsers(params);
-      setUsers(result.data);
+      setUsers(result?.data || []);
       setPagination((prev) => ({
         ...prev,
-        totalPages: result.pagination.totalPages,
+        totalPages: result?.pagination?.totalPages || 1,
       }));
     } catch (err) {
       setError(handleApiError(err));

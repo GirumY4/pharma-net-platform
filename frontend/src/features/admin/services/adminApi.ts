@@ -20,13 +20,13 @@ export const fetchUsers = async (filters: UserFilters) => {
   if (filters.includeDeleted) params.includeDeleted = filters.includeDeleted;
 
   const response = await api.get("/users", { params });
-  return response.data.data;
+  return response.data;
 };
 
 // PATCH /api/users/:id
 export const updateUser = async (userId: string, payload: Partial<IUser>) => {
   const response = await api.patch(`/users/${userId}`, payload);
-  return response.data.data;
+  return response.data;
 };
 
 // DELETE /api/users/:id (Soft Delete)
