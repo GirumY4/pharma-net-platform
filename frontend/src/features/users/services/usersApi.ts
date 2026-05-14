@@ -48,39 +48,50 @@ export const changePassword = async (
 /**
  * Deactivate user account (soft delete)
  * Endpoint: DELETE /api/users/me
- * Note: Only available for pharmacy_manager via admin action; public users cannot self-delete
+ * Sends a confirmation email before the account is deactivated.
  */
 export const deactivateAccount = async (): Promise<{ message: string }> => {
   const response = await api.delete<SuccessResponse<unknown>>("/users/me");
   return { message: response.data.message || "Deactivation email sent" };
 };
 
-export const confirmDeactivation = async (token: string): Promise<{ message: string }> => {
-  const response = await api.post<SuccessResponse<unknown>>(`/users/confirm-deactivation/${encodeURIComponent(token)}`);
-  return { message: response.data.message || "Account deactivated successfully" };
+export const confirmDeactivation = async (
+  token: string,
+): Promise<{ message: string }> => {
+  const response = await api.post<SuccessResponse<unknown>>(
+    `/users/confirm-deactivation/${encodeURIComponent(token)}`,
+  );
+  return {
+    message: response.data.message || "Account deactivated successfully",
+  };
 };
 
-export const confirmReactivation = async (token: string): Promise<{ message: string }> => {
-  const response = await api.post<SuccessResponse<unknown>>(`/users/confirm-reactivation/${encodeURIComponent(token)}`);
-  return { message: response.data.message || "Account reactivated successfully" };
+export const confirmReactivation = async (
+  token: string,
+): Promise<{ message: string }> => {
+  const response = await api.post<SuccessResponse<unknown>>(
+    `/users/confirm-reactivation/${encodeURIComponent(token)}`,
+  );
+  return {
+    message: response.data.message || "Account reactivated successfully",
+  };
 };
 
 /**
  * Upload profile picture
  * Endpoint: POST /api/users/me/profile-picture
  */
-export const uploadProfilePicture = async (file: File): Promise<{ profilePictureUrl: string }> => {
+export const uploadProfilePicture = async (
+  file: File,
+): Promise<{ profilePictureUrl: string }> => {
   const formData = new FormData();
   formData.append("profilePicture", file);
-  
-  const response = await api.post<SuccessResponse<{ profilePictureUrl: string }>>(
-    "/users/me/profile-picture", 
+
+  const response = await api.post<
+    SuccessResponse<{ profilePictureUrl: string }>
+  >(
+    "/users/me/profile-picture",
     formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
   );
   return response.data.data;
 };
@@ -90,6 +101,10 @@ export const uploadProfilePicture = async (file: File): Promise<{ profilePicture
  * Endpoint: DELETE /api/users/me/profile-picture
  */
 export const removeProfilePicture = async (): Promise<{ message: string }> => {
-  const response = await api.delete<SuccessResponse<unknown>>("/users/me/profile-picture");
-  return { message: response.data.message || "Profile picture removed successfully" };
+  const response = await api.delete<SuccessResponse<unknown>>(
+    "/users/me/profile-picture",
+  );
+  return {
+    message: response.data.message || "Profile picture removed successfully",
+  };
 };

@@ -1,16 +1,22 @@
 import { Alert, Box, Button, CircularProgress, Typography } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../../contexts/useAuth";
+import { handleApiError } from "../../../utils/errorMapper";
 import { confirmDeactivation } from "../../users/services/usersApi";
 
 export const ConfirmDeactivationPage = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const hasConfirmedRef = useRef(false);
 
   useEffect(() => {
+    if (hasConfirmedRef.current) return;
+
     if (!token) {
       setError("No deactivation token provided.");
       setLoading(false);
@@ -18,20 +24,20 @@ export const ConfirmDeactivationPage = () => {
     }
 
     const confirm = async () => {
+      hasConfirmedRef.current = true;
       try {
         const response = await confirmDeactivation(token);
         setSuccess(response.message || "Your account has been successfully deactivated.");
-        // Clear local auth context or token here if needed
-        localStorage.removeItem("auth_token"); 
-      } catch (err: any) {
-        setError(err.message || "Failed to deactivate account. The link may have expired.");
+        logout();
+      } catch (err) {
+        setError(handleApiError(err));
       } finally {
         setLoading(false);
       }
     };
 
     confirm();
-  }, [token]);
+  }, [logout, token]);
 
   return (
     <Box
@@ -47,7 +53,7 @@ export const ConfirmDeactivationPage = () => {
       <Box
         sx={{
           maxWidth: 400,
-          w: "100%",
+          width: "100%",
           p: 4,
           bgcolor: "white",
           borderRadius: 3,

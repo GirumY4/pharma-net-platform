@@ -130,11 +130,14 @@ export const SaaSLayout = () => {
     navigate("/login");
   };
 
-  const navItems = [
+  const managerNavItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
     { text: "Inventory", icon: <InventoryIcon />, path: "/inventory" },
     { text: "Orders", icon: <OrdersIcon />, path: "/orders" },
     { text: "Reports", icon: <ReportsIcon />, path: "/reports" },
+  ];
+
+  const adminNavItems = [
     ...(user?.role === "admin"
       ? [
           {
@@ -145,6 +148,9 @@ export const SaaSLayout = () => {
         ]
       : []),
   ];
+
+  const navItems =
+    user?.role === "pharmacy_manager" ? managerNavItems : adminNavItems;
 
   return (
     <Box

@@ -5,6 +5,8 @@ import express, { type Express, type Request, type Response } from "express";
 import helmet from "helmet"; // security headers
 import morgan from "morgan"; // optional – nice for development
 
+import path from "path";
+
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 
@@ -28,7 +30,12 @@ app.use(helmet());
 // CORS – very restrictive in production
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
-  : ["http://localhost:5173", "http://localhost:3000"];
+  : [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ];
 
 app.use(
   cors({
@@ -53,6 +60,14 @@ if (process.env.NODE_ENV === "development") {
 // Body parsing
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(
+  "/uploads",
+  (_req, res, next) => {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    next();
+  },
+  express.static(path.join(process.cwd(), "uploads")),
+);
 
 // ─── Routes ────────────────────────────────────────────────────────────
 app.get("/health", (_req: Request, res: Response) => {

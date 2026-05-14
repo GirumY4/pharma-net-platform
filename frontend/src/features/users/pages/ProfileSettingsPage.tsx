@@ -1,14 +1,29 @@
 // src/features/users/pages/ProfileSettingsPage.tsx
-import { Alert, Box, Grid, Stack, Typography } from "@mui/material";
+import { Alert, Box, Grid, Snackbar, Stack, Typography } from "@mui/material";
+import { useState } from "react";
+import { useAuth } from "../../../contexts/useAuth";
 import { AccountSettingsCard } from "../components/AccountSettingsCard";
 import { PasswordChangeForm } from "../components/PasswordChangeForm";
 import { ProfileForm } from "../components/ProfileForm";
 import { ProfileHeader } from "../components/ProfileHeader";
+import { ProfilePictureUpload } from "../components/ProfilePictureUpload";
 import { ProfileSkeleton } from "../components/ProfileSkeleton";
 import { useUserProfile } from "../hooks/useUserProfile";
+import { deactivateAccount } from "../services/usersApi";
 
 export const ProfileSettingsPage = () => {
   const { profile, loading, error, refresh } = useUserProfile(true);
+  const { refreshUser } = useAuth();
+  const [accountNotice, setAccountNotice] = useState<string | null>(null);
+
+  const refreshAccountState = async () => {
+    await Promise.all([refresh(), refreshUser()]);
+  };
+
+  const handleDeactivate = async () => {
+    const response = await deactivateAccount();
+    setAccountNotice(response.message);
+  };
 
   if (loading) {
     return <ProfileSkeleton />;
@@ -74,7 +89,7 @@ export const ProfileSettingsPage = () => {
         {/* Left Column: Profile & Password */}
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack spacing={4}>
-            <ProfileForm profile={profile} onSuccess={refresh} />
+            <ProfileForm profile={profile} onSuccess={refreshAccountState} />
             <PasswordChangeForm
               onSuccess={() => {
                 // Optionally show success toast
@@ -85,14 +100,35 @@ export const ProfileSettingsPage = () => {
 
         {/* Right Column: Account Info */}
         <Grid size={{ xs: 12, lg: 4 }}>
-          <AccountSettingsCard
-            profile={profile}
-            onDeactivate={async () => {
-              // Handle account deactivation flow
-            }}
-          />
+          <Stack spacing={4}>
+            <ProfilePictureUpload
+              currentUser={profile}
+              onUploadSuccess={refreshAccountState}
+              onRemoveSuccess={refreshAccountState}
+            />
+            <AccountSettingsCard
+              profile={profile}
+              onDeactivate={handleDeactivate}
+            />
+          </Stack>
         </Grid>
       </Grid>
+
+      <Snackbar
+        open={!!accountNotice}
+        autoHideDuration={7000}
+        onClose={() => setAccountNotice(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setAccountNotice(null)}
+          sx={{ width: "100%" }}
+        >
+          {accountNotice}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

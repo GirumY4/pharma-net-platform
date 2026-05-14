@@ -1,6 +1,5 @@
-// src/features/marketplace/hooks/useMarketplaceSearch.ts
 import { debounce } from "lodash";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { handleApiError } from "../../../utils/errorMapper";
 import { searchMarketplace } from "../services/marketplaceApi";
 import type { MarketplaceFilters, MarketplaceMedicine } from "../types";
@@ -16,8 +15,16 @@ interface UseMarketplaceSearchReturn {
     totalPages: number;
   };
   search: (filters: MarketplaceFilters) => void;
+  retry: () => void;
   loadMore: () => void;
 }
+
+const DEFAULT_PAGINATION = {
+  total: 0,
+  page: 1,
+  limit: 20,
+  totalPages: 0,
+};
 
 export const useMarketplaceSearch = (
   initialFilters: MarketplaceFilters = { page: 1, limit: 20 },
@@ -25,26 +32,29 @@ export const useMarketplaceSearch = (
   const [results, setResults] = useState<MarketplaceMedicine[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<MarketplaceFilters>(initialFilters);
   const [pagination, setPagination] = useState({
-    total: 0,
-    page: 1,
-    limit: initialFilters.limit || 20,
-    totalPages: 0,
+    ...DEFAULT_PAGINATION,
+    limit: initialFilters.limit || DEFAULT_PAGINATION.limit,
   });
 
   const isMounted = useRef(true);
+  const initialFiltersRef = useRef(initialFilters);
+  const filtersRef = useRef<MarketplaceFilters>(initialFilters);
 
   const performSearch = useCallback(
-    async (searchFilters: MarketplaceFilters) => {
+    async (searchFilters: MarketplaceFilters, append = false) => {
+      filtersRef.current = searchFilters;
       setLoading(true);
       setError(null);
+
       try {
         const result = await searchMarketplace(searchFilters);
-        if (isMounted.current) {
-          setResults(result.data);
-          setPagination(result.pagination);
-        }
+        if (!isMounted.current) return;
+
+        setResults((previous) =>
+          append ? [...previous, ...result.data] : result.data,
+        );
+        setPagination(result.pagination);
       } catch (err) {
         if (isMounted.current) {
           setError(handleApiError(err));
@@ -58,35 +68,52 @@ export const useMarketplaceSearch = (
     [],
   );
 
-  // Debounced search for text inputs
-  const debouncedSearch = useCallback(
-    debounce((filters: MarketplaceFilters) => {
-      performSearch({ ...filters, page: 1 }); // Reset to page 1 on new search
-    }, 300),
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((nextFilters: MarketplaceFilters) => {
+        void performSearch(nextFilters, false);
+      }, 300),
     [performSearch],
   );
 
   const search = useCallback(
-    (newFilters: MarketplaceFilters) => {
-      setFilters((prev) => ({ ...prev, ...newFilters }));
-      debouncedSearch({ ...filters, ...newFilters, page: 1 });
+    (nextFilters: MarketplaceFilters) => {
+      const normalizedFilters = {
+        ...nextFilters,
+        page: 1,
+        limit: nextFilters.limit || filtersRef.current.limit || 20,
+      };
+      filtersRef.current = normalizedFilters;
+      debouncedSearch(normalizedFilters);
     },
-    [debouncedSearch, filters],
+    [debouncedSearch],
   );
+
+  const retry = useCallback(() => {
+    void performSearch(filtersRef.current, false);
+  }, [performSearch]);
 
   const loadMore = useCallback(() => {
     if (pagination.page >= pagination.totalPages || loading) return;
-    const nextPage = pagination.page + 1;
-    setFilters((prev) => ({ ...prev, page: nextPage }));
-    performSearch({ ...filters, page: nextPage });
-  }, [filters, loading, pagination, performSearch]);
+
+    const nextFilters = {
+      ...filtersRef.current,
+      page: pagination.page + 1,
+      limit: pagination.limit,
+    };
+
+    void performSearch(nextFilters, true);
+  }, [loading, pagination, performSearch]);
 
   useEffect(() => {
+    isMounted.current = true;
+    void performSearch(initialFiltersRef.current, false);
+
     return () => {
       isMounted.current = false;
       debouncedSearch.cancel();
     };
-  }, [debouncedSearch]);
+  }, [debouncedSearch, performSearch]);
 
   return {
     results,
@@ -94,6 +121,7 @@ export const useMarketplaceSearch = (
     error,
     pagination,
     search,
+    retry,
     loadMore,
   };
 };

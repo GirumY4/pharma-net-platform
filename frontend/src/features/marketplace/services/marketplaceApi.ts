@@ -2,9 +2,11 @@
 import api from "../../../services/api";
 import type { SuccessResponse } from "../../../types";
 import type {
+  CreateMarketplaceOrderPayload,
   MarketplaceApiResponse,
   MarketplaceFilters,
   MarketplaceMedicine,
+  MarketplaceOrderSummary,
 } from "../types";
 
 /**
@@ -20,20 +22,28 @@ export const searchMarketplace = async (
   if (filters.genericName) params.genericName = filters.genericName;
   if (filters.category) params.category = filters.category;
   if (filters.city) params.city = filters.city;
-  if (filters.maxPrice) params.maxPrice = filters.maxPrice;
-  if (filters.minStock) params.minStock = filters.minStock;
-  if (filters.userLat && filters.userLng) {
+  if (filters.maxPrice !== undefined) params.maxPrice = filters.maxPrice;
+  if (filters.minStock !== undefined) params.minStock = filters.minStock;
+  if (filters.userLat !== undefined && filters.userLng !== undefined) {
     params.lat = filters.userLat;
     params.lng = filters.userLng;
   }
   if (filters.page) params.page = filters.page;
   if (filters.limit) params.limit = filters.limit;
 
-  const response = await api.get<SuccessResponse<MarketplaceApiResponse>>(
+  const response = await api.get<SuccessResponse<MarketplaceMedicine[]>>(
     "/medicines/marketplace",
     { params },
   );
-  return response.data.data;
+  return {
+    data: response.data.data,
+    pagination: response.data.pagination || {
+      total: 0,
+      page: filters.page || 1,
+      limit: filters.limit || 20,
+      totalPages: 0,
+    },
+  };
 };
 
 /**
@@ -45,6 +55,20 @@ export const fetchMedicinePublicDetails = async (
 ): Promise<MarketplaceMedicine> => {
   const response = await api.get<SuccessResponse<MarketplaceMedicine>>(
     `/medicines/marketplace/${medicineId}`,
+  );
+  return response.data.data;
+};
+
+/**
+ * Place a one-pharmacy marketplace order for an authenticated public user.
+ * Endpoint: POST /api/orders
+ */
+export const createMarketplaceOrder = async (
+  payload: CreateMarketplaceOrderPayload,
+): Promise<MarketplaceOrderSummary> => {
+  const response = await api.post<SuccessResponse<MarketplaceOrderSummary>>(
+    "/orders",
+    payload,
   );
   return response.data.data;
 };

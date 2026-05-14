@@ -1,6 +1,7 @@
 import { Alert, Box, Button, CircularProgress, Typography } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { handleApiError } from "../../../utils/errorMapper";
 import { confirmReactivation } from "../../users/services/usersApi";
 
 export const ConfirmReactivationPage = () => {
@@ -9,8 +10,11 @@ export const ConfirmReactivationPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const hasConfirmedRef = useRef(false);
 
   useEffect(() => {
+    if (hasConfirmedRef.current) return;
+
     if (!token) {
       setError("No reactivation token provided.");
       setLoading(false);
@@ -18,11 +22,12 @@ export const ConfirmReactivationPage = () => {
     }
 
     const confirm = async () => {
+      hasConfirmedRef.current = true;
       try {
         const response = await confirmReactivation(token);
         setSuccess(response.message || "Your account has been successfully reactivated.");
-      } catch (err: any) {
-        setError(err.message || "Failed to reactivate account. The link may have expired.");
+      } catch (err) {
+        setError(handleApiError(err));
       } finally {
         setLoading(false);
       }
@@ -45,7 +50,7 @@ export const ConfirmReactivationPage = () => {
       <Box
         sx={{
           maxWidth: 400,
-          w: "100%",
+          width: "100%",
           p: 4,
           bgcolor: "white",
           borderRadius: 3,

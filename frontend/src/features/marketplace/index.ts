@@ -17,6 +17,7 @@ export { useMarketplaceSearch } from "./hooks/useMarketplaceSearch";
 
 // Services
 export {
+  createMarketplaceOrder,
   fetchMedicinePublicDetails,
   searchMarketplace,
 } from "./services/marketplaceApi";
@@ -24,9 +25,11 @@ export {
 // Types
 export type {
   Category,
+  CreateMarketplaceOrderPayload,
   MarketplaceApiResponse,
   MarketplaceFilters,
   MarketplaceMedicine,
+  MarketplaceOrderSummary,
   UnitOfMeasure,
 } from "./types";
 

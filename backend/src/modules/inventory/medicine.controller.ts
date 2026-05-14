@@ -189,90 +189,227 @@ export const getMedicines = async (
  * Global marketplace search – public access (no auth required)
  * Uses aggregation pipeline for performance + correct city filtering
  */
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const asPositiveNumber = (value: unknown): number | undefined => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericValue >= 0
+    ? numericValue
+    : undefined;
+};
+
+const asCoordinate = (value: unknown): number | undefined => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : undefined;
+};
+
+const marketplaceProjection = {
+  _id: 0,
+  medicineId: "$_id",
+  name: 1,
+  genericName: 1,
+  category: 1,
+  description: 1,
+  unitPrice: 1,
+  unitOfMeasure: 1,
+  totalStock: 1,
+  pharmacyId: "$pharmacy._id",
+  pharmacyName: "$pharmacy.name",
+  pharmacyPhone: "$pharmacy.phoneNumber",
+  pharmacyAddress: "$pharmacy.address",
+  pharmacyCity: "$pharmacy.city",
+  pharmacyLocation: "$pharmacy.location",
+  distanceKm: 1,
+};
+
+const buildMarketplacePipeline = (
+  query: Request["query"],
+  options: { medicineId?: string } = {},
+) => {
+  const { name, genericName, category, city, maxPrice, minStock, lat, lng } =
+    query;
+  const baseQuery: any = { isDeleted: false, totalStock: { $gt: 0 } };
+
+  if (options.medicineId) {
+    baseQuery._id = new mongoose.Types.ObjectId(options.medicineId);
+  }
+
+  if (name) {
+    const regex = { $regex: escapeRegExp(String(name)), $options: "i" };
+    baseQuery.$or = [
+      { name: regex },
+      { genericName: regex },
+      { category: regex },
+    ];
+  }
+
+  if (genericName) {
+    baseQuery.genericName = {
+      $regex: escapeRegExp(String(genericName)),
+      $options: "i",
+    };
+  }
+
+  if (category) {
+    baseQuery.category = {
+      $regex: `^${escapeRegExp(String(category))}$`,
+      $options: "i",
+    };
+  }
+
+  const parsedMaxPrice = asPositiveNumber(maxPrice);
+  if (parsedMaxPrice !== undefined) {
+    baseQuery.unitPrice = {
+      ...(baseQuery.unitPrice || {}),
+      $lte: parsedMaxPrice,
+    };
+  }
+
+  const parsedMinStock = asPositiveNumber(minStock);
+  if (parsedMinStock !== undefined) {
+    baseQuery.totalStock = { ...baseQuery.totalStock, $gte: parsedMinStock };
+  }
+
+  const pipeline: any[] = [
+    { $match: baseQuery },
+    {
+      $lookup: {
+        from: "users",
+        localField: "pharmacyId",
+        foreignField: "_id",
+        as: "pharmacy",
+      },
+    },
+    { $unwind: "$pharmacy" },
+    {
+      $match: {
+        "pharmacy.role": "pharmacy_manager",
+        "pharmacy.isActive": true,
+        "pharmacy.isDeleted": false,
+      },
+    },
+  ];
+
+  if (city) {
+    pipeline.push({
+      $match: {
+        "pharmacy.city": {
+          $regex: escapeRegExp(String(city)),
+          $options: "i",
+        },
+      },
+    });
+  }
+
+  const userLat = asCoordinate(lat);
+  const userLng = asCoordinate(lng);
+  if (userLat !== undefined && userLng !== undefined) {
+    pipeline.push(
+      {
+        $addFields: {
+          distanceKm: {
+            $cond: [
+              {
+                $and: [
+                  { $ne: ["$pharmacy.location", null] },
+                  { $ne: ["$pharmacy.location.lat", null] },
+                  { $ne: ["$pharmacy.location.lng", null] },
+                ],
+              },
+              {
+                $let: {
+                  vars: {
+                    lat1: { $degreesToRadians: userLat },
+                    lng1: { $degreesToRadians: userLng },
+                    lat2: { $degreesToRadians: "$pharmacy.location.lat" },
+                    lng2: { $degreesToRadians: "$pharmacy.location.lng" },
+                  },
+                  in: {
+                    $multiply: [
+                      6371,
+                      {
+                        $acos: {
+                          $min: [
+                            1,
+                            {
+                              $max: [
+                                -1,
+                                {
+                                  $add: [
+                                    {
+                                      $multiply: [
+                                        { $sin: "$$lat1" },
+                                        { $sin: "$$lat2" },
+                                      ],
+                                    },
+                                    {
+                                      $multiply: [
+                                        { $cos: "$$lat1" },
+                                        { $cos: "$$lat2" },
+                                        {
+                                          $cos: {
+                                            $subtract: ["$$lng2", "$$lng1"],
+                                          },
+                                        },
+                                      ],
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+              null,
+            ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          distanceSortKey: { $ifNull: ["$distanceKm", 999999] },
+        },
+      },
+      { $sort: { distanceSortKey: 1, unitPrice: 1, name: 1 } },
+    );
+  } else {
+    pipeline.push({ $sort: { name: 1, unitPrice: 1 } });
+  }
+
+  return pipeline;
+};
+
 export const getMarketplaceMedicines = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const {
-      name,
-      genericName,
-      category,
-      city,
-      page = "1",
-      limit = "20",
-    } = req.query;
+    const pageNum = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const limitNum = Math.min(
+      100,
+      Math.max(1, parseInt(req.query.limit as string, 10) || 20),
+    );
+    const pipeline = buildMarketplacePipeline(req.query);
 
-    // Base query: only active medicines with stock
-    const baseQuery: any = { isDeleted: false, totalStock: { $gt: 0 } };
-
-    if (name) baseQuery.name = { $regex: name as string, $options: "i" };
-    if (genericName)
-      baseQuery.genericName = { $regex: genericName as string, $options: "i" };
-    if (category)
-      baseQuery.category = { $regex: category as string, $options: "i" };
-
-    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
-    const limitNum = Math.min(100, parseInt(limit as string, 10) || 20);
-
-    // Aggregation pipeline to handle pharmacy filtering before pagination
-    const pipeline: any[] = [
-      { $match: baseQuery },
-
-      // Join with pharmacy (users collection)
-      {
-        $lookup: {
-          from: "users",
-          localField: "pharmacyId",
-          foreignField: "_id",
-          as: "pharmacy",
-        },
-      },
-      { $unwind: "$pharmacy" },
-
-      // Only active pharmacies
-      { $match: { "pharmacy.isActive": true } },
-    ];
-
-    // City filter (applied before pagination)
-    if (city) {
-      pipeline.push({
-        $match: { "pharmacy.city": { $regex: city as string, $options: "i" } },
-      });
-    }
-
-    // Facet for total count + paginated data in one query
     pipeline.push({
       $facet: {
         metadata: [{ $count: "total" }],
         data: [
           { $skip: (pageNum - 1) * limitNum },
           { $limit: limitNum },
-          {
-            $project: {
-              _id: 0,
-              medicineId: "$_id",
-              name: 1,
-              genericName: 1,
-              category: 1,
-              unitPrice: 1,
-              unitOfMeasure: 1,
-              totalStock: 1,
-              pharmacyId: "$pharmacy._id",
-              pharmacyName: "$pharmacy.name",
-              pharmacyPhone: "$pharmacy.phoneNumber",
-              pharmacyAddress: "$pharmacy.address",
-              pharmacyCity: "$pharmacy.city",
-              pharmacyLocation: "$pharmacy.location",
-            },
-          },
+          { $project: marketplaceProjection },
         ],
       },
     });
 
-    const result = await Medicine.aggregate(pipeline);
-    const { data = [], metadata = [] } = result[0] || {
+    const [result] = await Medicine.aggregate(pipeline);
+    const { data = [], metadata = [] } = result || {
       data: [],
       metadata: [],
     };
@@ -287,6 +424,44 @@ export const getMarketplaceMedicines = async (
         limit: limitNum,
         totalPages: Math.ceil(total / limitNum),
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMarketplaceMedicineById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = String(req.params.id || "");
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      const error = new Error("VALIDATION_ERROR: Invalid medicine id.") as any;
+      error.statusCode = 400;
+      error.code = "INVALID_OBJECT_ID";
+      throw error;
+    }
+
+    const [medicine] = await Medicine.aggregate([
+      ...buildMarketplacePipeline(req.query, { medicineId: id }),
+      { $limit: 1 },
+      { $project: marketplaceProjection },
+    ]);
+
+    if (!medicine) {
+      const error = new Error(
+        "MEDICINE_NOT_FOUND: Marketplace medicine not found.",
+      ) as any;
+      error.statusCode = 404;
+      error.code = "MEDICINE_NOT_FOUND";
+      throw error;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: medicine,
     });
   } catch (error) {
     next(error);

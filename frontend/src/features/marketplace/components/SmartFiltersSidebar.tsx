@@ -13,6 +13,7 @@ import {
   Select,
   Slider,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useState } from "react";
@@ -23,11 +24,13 @@ interface SmartFiltersSidebarProps {
   onClose: () => void;
   filters: {
     category?: string;
+    city?: string;
     maxPrice?: number;
     minStock?: number;
   };
   onFilterChange: (filters: {
     category?: string;
+    city?: string;
     maxPrice?: number;
     minStock?: number;
   }) => void;
@@ -130,6 +133,41 @@ export const SmartFiltersSidebar = ({
           </Collapse>
         </Box>
 
+        {/* City Filter */}
+        <Box sx={{ mb: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              cursor: "pointer",
+              py: 0.5,
+            }}
+            onClick={() => toggleSection("city")}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              City
+            </Typography>
+            {expandedSection === "city" ? (
+              <ExpandLess fontSize="small" />
+            ) : (
+              <ExpandMore fontSize="small" />
+            )}
+          </Box>
+          <Collapse in={expandedSection === "city"}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Pharmacy City"
+              value={filters.city || ""}
+              onChange={(e) =>
+                onFilterChange({ city: e.target.value || undefined })
+              }
+              sx={{ mt: 1 }}
+            />
+          </Collapse>
+        </Box>
+
         {/* Price Range Filter */}
         <Box sx={{ mb: 3 }}>
           <Box
@@ -171,6 +209,51 @@ export const SmartFiltersSidebar = ({
                 sx={{ display: "block", textAlign: "right" }}
               >
                 Up to ETB {filters.maxPrice || 500}
+              </Typography>
+            </Box>
+          </Collapse>
+        </Box>
+
+        {/* Stock Filter */}
+        <Box sx={{ mb: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              cursor: "pointer",
+              py: 0.5,
+            }}
+            onClick={() => toggleSection("stock")}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              Minimum Stock
+            </Typography>
+            {expandedSection === "stock" ? (
+              <ExpandLess fontSize="small" />
+            ) : (
+              <ExpandMore fontSize="small" />
+            )}
+          </Box>
+          <Collapse in={expandedSection === "stock"}>
+            <Box sx={{ px: 1, pt: 1 }}>
+              <Slider
+                value={filters.minStock || 0}
+                onChange={(_, value) =>
+                  onFilterChange({ minStock: value as number })
+                }
+                min={0}
+                max={500}
+                step={10}
+                valueLabelDisplay="auto"
+                sx={{ color: "#0F8B6C", mb: 1 }}
+              />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", textAlign: "right" }}
+              >
+                At least {filters.minStock || 0} units
               </Typography>
             </Box>
           </Collapse>

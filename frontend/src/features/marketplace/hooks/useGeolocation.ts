@@ -17,7 +17,7 @@ export const useGeolocation = (enabled = true) => {
   });
 
   const requestLocation = useCallback(() => {
-    if (!enabled || !navigator.geolocation) {
+    if (!navigator.geolocation) {
       setState((prev) => ({
         ...prev,
         error: "Geolocation is not supported by your browser.",

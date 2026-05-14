@@ -1,4 +1,4 @@
-import { Box, Paper, Stack, Typography, useTheme } from "@mui/material";
+import { Box, Paper, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { kpiTones, surface, tokens } from "../../../styles/theme";
 import type { DashboardKpi } from "../types";
@@ -9,7 +9,6 @@ const getToneColors = (tone: DashboardKpi["tone"]) => {
 };
 
 export const DashboardKpiCard = ({ kpi }: { kpi: DashboardKpi }) => {
-  const theme = useTheme();
   const tone = getToneColors(kpi.tone);
 
   return (

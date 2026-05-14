@@ -37,7 +37,7 @@ export const MarketplaceHero = ({
     }
   }, [query, onSearch]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSearch();
     }
@@ -114,7 +114,7 @@ export const MarketplaceHero = ({
               placeholder="Search medicine, generic name, or category..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               slotProps={{
                 input: {
                   disableUnderline: true,

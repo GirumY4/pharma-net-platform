@@ -4,6 +4,7 @@ export interface MarketplaceMedicine {
   name: string;
   genericName?: string;
   category: string;
+  description?: string;
   unitPrice: number;
   unitOfMeasure: "tablet" | "capsule" | "vial" | "bottle" | "sachet" | "unit";
   totalStock: number;
@@ -33,7 +34,6 @@ export interface MarketplaceFilters {
 }
 
 export interface MarketplaceApiResponse {
-  success: boolean;
   data: MarketplaceMedicine[];
   pagination: {
     total: number;
@@ -41,6 +41,22 @@ export interface MarketplaceApiResponse {
     limit: number;
     totalPages: number;
   };
+}
+
+export interface CreateMarketplaceOrderPayload {
+  pharmacyId: string;
+  items: Array<{
+    medicineId: string;
+    quantity: number;
+  }>;
+  fulfillmentMethod: "pickup" | "delivery";
+  deliveryAddress?: string;
+}
+
+export interface MarketplaceOrderSummary {
+  _id: string;
+  totalAmount: number;
+  status: "pending" | "approved" | "processing" | "ready" | "delivered" | "rejected";
 }
 
 export const CATEGORIES = [
