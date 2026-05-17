@@ -10,7 +10,7 @@ import path from "path";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 
-// Import routes (create these folders/files later)
+// Import routes
 import auditRoutes from "./modules/auditLogs/auditLogs.routes.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import inventoryTransactionRoutes from "./modules/inventory/inventoryTransaction.routes.js";
@@ -19,6 +19,7 @@ import orderRoutes from "./modules/orders/orders.routes.js";
 import paymentRoutes from "./modules/payments/payments.routes.js";
 import reportRoutes from "./modules/reports/reports.routes.js";
 import userRoutes from "./modules/users/users.routes.js";
+import notificationRoutes from "./modules/notifications/notifications.routes.js";
 
 const app: Express = express();
 
@@ -27,7 +28,7 @@ const app: Express = express();
 // Security headers
 app.use(helmet());
 
-// CORS – very restrictive in production
+// CORS
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
   : [
@@ -52,7 +53,7 @@ app.use(
   }),
 );
 
-// Logging in development
+// Logging
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
@@ -86,6 +87,7 @@ app.use("/api/inventory-transactions", inventoryTransactionRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/logs", auditRoutes); // admin only
 
 // ─── Error handling ────────────────────────────────────────────────────

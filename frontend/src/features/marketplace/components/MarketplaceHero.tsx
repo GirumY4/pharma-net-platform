@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useGeolocation } from "../hooks/useGeolocation";
+import { Logo } from "../../../components/Logo";
 
 interface MarketplaceHeroProps {
   onSearch: (query: string) => void;
@@ -67,6 +68,9 @@ export const MarketplaceHero = ({
     >
       <Fade in timeout={600}>
         <Box sx={{ maxWidth: 800, mx: "auto" }}>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+            <Logo />
+          </Box>
           <Typography
             variant="h3"
             color="#0F5E4D"

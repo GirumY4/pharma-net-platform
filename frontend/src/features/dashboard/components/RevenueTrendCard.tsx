@@ -120,7 +120,7 @@ export const RevenueTrendCard = ({
       </Box>
 
       {/* Chart */}
-      <Box sx={{ height: { xs: 180, sm: 210, md: 220 }, width: "100%" }}>
+      <Box sx={{ height: { xs: 180, sm: 210, md: 220 }, width: "100%", minHeight: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}

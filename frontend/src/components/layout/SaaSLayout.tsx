@@ -1,20 +1,26 @@
 // src/components/layout/SaaSLayout.tsx
 import {
   AdminPanelSettings as AdminIcon,
+  ChevronRight as ChevronIcon,
+  Close as CloseIcon,
   Dashboard as DashboardIcon,
+  DeleteOutlined as DeleteIcon,
   Inventory2Outlined as InventoryIcon,
   Logout,
   Menu as MenuIcon,
   NotificationsNone as NotificationsIcon,
   LocalShippingOutlined as OrdersIcon,
+  Refresh as RefreshIcon,
   AssessmentOutlined as ReportsIcon,
   Settings as SettingsIcon,
 } from "@mui/icons-material";
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   Button,
+  Chip,
   CssBaseline,
   Divider,
   Drawer,
@@ -22,6 +28,7 @@ import {
   IconButton,
   List,
   ListItem,
+  ListItemAvatar,
   ListItemButton,
   ListItemIcon,
   ListItemText,
@@ -32,86 +39,28 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
 import { API_BASE_URL } from "../../services/api";
+import {
+  type AppNotification,
+  deleteNotification,
+  fetchNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from "../../services/notificationApi";
 import type { IUser } from "../../types";
 
 const TOP_BAR_HEIGHT = 72;
 
-const Logo = ({ onDark = false }: { onDark?: boolean }) => (
-  <Stack
-    direction="row"
-    spacing={1.5}
-    sx={{ minWidth: 0, alignItems: "center" }}
-  >
-    <Box
-      aria-label="Pharma-Net logo"
-      sx={{
-        width: 38,
-        height: 38,
-        flex: "0 0 auto",
-        borderRadius: 2,
-        display: "grid",
-        placeItems: "center",
-        background:
-          "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(214,250,232,0.92) 100%)",
-        boxShadow: onDark
-          ? "0 12px 30px rgba(0, 0, 0, 0.18)"
-          : "0 10px 26px rgba(18, 32, 28, 0.12)",
-        border: "1px solid rgba(255,255,255,0.5)",
-      }}
-    >
-      <svg
-        width={23}
-        height={23}
-        viewBox="0 0 28 28"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M14 4.5v19M4.5 14h19"
-          stroke="#0F8B6C"
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-        <path
-          d="M7.5 7.5h13v13h-13z"
-          stroke="#DDAA4A"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </Box>
-    <Box sx={{ minWidth: 0 }}>
-      <Typography
-        variant="h6"
-        sx={{
-          color: onDark ? "common.white" : "text.primary",
-          fontWeight: 800,
-          letterSpacing: 0,
-          lineHeight: 1,
-        }}
-      >
-        Pharma-Net
-      </Typography>
-      <Typography
-        variant="caption"
-        sx={{
-          color: onDark ? "rgba(255,255,255,0.66)" : "text.secondary",
-          display: { xs: "none", sm: "block" },
-          fontWeight: 800,
-          letterSpacing: "0.08em",
-          lineHeight: 1.2,
-          textTransform: "uppercase",
-        }}
-      >
-        Operations
-      </Typography>
-    </Box>
-  </Stack>
-);
+const isUnauthorizedNotificationError = (err: unknown) =>
+  typeof err === "object" &&
+  err !== null &&
+  (("status" in err && err.status === 401) ||
+    ("code" in err && err.code === "UNAUTHORIZED"));
+
+import { Logo } from "../Logo";
 
 export const SaaSLayout = () => {
   const { user, logout } = useAuth();
@@ -123,6 +72,68 @@ export const SaaSLayout = () => {
   );
   const [notificationsAnchor, setNotificationsAnchor] =
     useState<null | HTMLElement>(null);
+
+  // Notification State
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await fetchNotifications();
+      setNotifications(data);
+      setUnreadCount(data.filter((n) => !n.isRead).length);
+    } catch (err: unknown) {
+      if (!isUnauthorizedNotificationError(err)) {
+        console.error("Failed to load notifications", err);
+      }
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => {
+      void loadNotifications();
+    }, 0);
+    const interval = window.setInterval(() => {
+      void loadNotifications();
+    }, 30000); // Poll every 30s
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(interval);
+    };
+  }, [loadNotifications]);
+
+  const handleNotificationClick = async (id: string, link?: string) => {
+    try {
+      await markNotificationAsRead(id);
+      await loadNotifications();
+      if (link) {
+        setNotificationsAnchor(null);
+        navigate(link);
+      }
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      loadNotifications();
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+    }
+  };
+
+  const handleDeleteNotif = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await deleteNotification(id);
+      loadNotifications();
+    } catch (err) {
+      console.error("Failed to delete notification", err);
+    }
+  };
 
   const handleLogout = () => {
     setUserMenuAnchor(null);
@@ -228,7 +239,10 @@ export const SaaSLayout = () => {
           <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
             <IconButton
               size="medium"
-              onClick={(event) => setNotificationsAnchor(event.currentTarget)}
+              onClick={(event) => {
+                setNotificationsAnchor(event.currentTarget);
+                loadNotifications();
+              }}
               sx={{
                 border: "1px solid rgba(255,255,255,0.78)",
                 bgcolor: "rgba(255,255,255,0.66)",
@@ -239,7 +253,13 @@ export const SaaSLayout = () => {
                 },
               }}
             >
-              <NotificationsIcon />
+              <Badge
+                badgeContent={unreadCount}
+                color="error"
+                overlap="circular"
+              >
+                <NotificationsIcon />
+              </Badge>
             </IconButton>
 
             <IconButton
@@ -400,26 +420,186 @@ export const SaaSLayout = () => {
                 elevation: 0,
                 sx: {
                   mt: 1.5,
-                  width: 320,
-                  borderRadius: 2,
+                  width: 380,
+                  maxHeight: 500,
+                  borderRadius: 3,
                   border: "1px solid rgba(255,255,255,0.78)",
-                  backgroundColor: "rgba(255,255,255,0.9)",
+                  backgroundColor: "rgba(255,255,255,0.95)",
                   backdropFilter: "blur(22px)",
                   boxShadow: "0 18px 54px rgba(18, 32, 28, 0.14)",
+                  display: "flex",
+                  flexDirection: "column",
                 },
               },
             }}
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
-            <Box sx={{ p: 2.5, textAlign: "center", color: "text.secondary" }}>
-              <Typography variant="subtitle2" color="text.primary">
-                Notification center
+            <Box
+              sx={{
+                p: 2,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderBottom: "1px solid rgba(23,35,31,0.08)",
+              }}
+            >
+              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                Notifications
+                {unreadCount > 0 && (
+                  <Chip
+                    label={`${unreadCount} New`}
+                    size="small"
+                    color="error"
+                    sx={{
+                      ml: 1.5,
+                      height: 20,
+                      fontSize: "0.65rem",
+                      fontWeight: 800,
+                    }}
+                  />
+                )}
               </Typography>
-              <Typography variant="body2">
-                No new operational alerts.
-              </Typography>
+              <Stack direction="row" spacing={1}>
+                <IconButton
+                  size="medium"
+                  onClick={loadNotifications}
+                  title="Refresh"
+                  sx={{
+                    display: { xs: "none", sm: "inline-flex" },
+                    border: "1px solid rgba(255,255,255,0.78)",
+                    borderRadius: 2.5,
+                    bgcolor: "rgba(255,255,255,0.66)",
+                    boxShadow: "0 8px 22px rgba(18, 32, 28, 0.06)",
+                    "&:hover": {
+                      bgcolor: "rgba(255,255,255,0.92)",
+                      color: "primary.main",
+                    },
+                  }}
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+                <Button
+                  size="small"
+                  onClick={handleMarkAllRead}
+                  disabled={unreadCount === 0}
+                  sx={{ fontSize: "0.75rem", fontWeight: 700 }}
+                >
+                  Mark all read
+                </Button>
+              </Stack>
             </Box>
+
+            <List sx={{ p: 0, overflowY: "auto", flexGrow: 1 }}>
+              {notifications.length === 0 ? (
+                <Box
+                  sx={{ p: 4, textAlign: "center", color: "text.secondary" }}
+                >
+                  <NotificationsIcon
+                    sx={{ fontSize: 40, opacity: 0.2, mb: 1.5 }}
+                  />
+                  <Typography variant="body2">No notifications yet.</Typography>
+                </Box>
+              ) : (
+                notifications.map((notif) => (
+                  <ListItem
+                    key={notif._id}
+                    disablePadding
+                    divider
+                    sx={{
+                      bgcolor: notif.isRead
+                        ? "transparent"
+                        : "rgba(15, 139, 108, 0.04)",
+                      transition: "background-color 0.2s ease",
+                      "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
+                    }}
+                  >
+                    <ListItemButton
+                      onClick={() =>
+                        handleNotificationClick(notif._id, notif.link)
+                      }
+                      sx={{ py: 2, px: 2.5 }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar
+                          sx={{
+                            bgcolor: notif.isRead
+                              ? "grey.200"
+                              : "primary.light",
+                            color: notif.isRead ? "grey.500" : "primary.main",
+                          }}
+                        >
+                          {notif.type === "order_update" ? (
+                            <OrdersIcon />
+                          ) : (
+                            <NotificationsIcon />
+                          )}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={notif.title}
+                        secondary={
+                          <>
+                            <Typography
+                              component="span"
+                              variant="body2"
+                              color="text.primary"
+                              sx={{
+                                display: "block",
+                                mb: 0.5,
+                                fontWeight: notif.isRead ? 400 : 600,
+                              }}
+                            >
+                              {notif.message}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {new Date(notif.createdAt).toLocaleDateString()}{" "}
+                              at{" "}
+                              {new Date(notif.createdAt).toLocaleTimeString(
+                                [],
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                            </Typography>
+                          </>
+                        }
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleDeleteNotif(notif._id, e)}
+                        sx={{
+                          ml: 1,
+                          opacity: 0,
+                          ".MuiListItem-root:hover &": { opacity: 0.4 },
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </ListItemButton>
+                  </ListItem>
+                ))
+              )}
+            </List>
+
+            {notifications.length > 0 && (
+              <Box
+                sx={{
+                  p: 1,
+                  textAlign: "center",
+                  borderTop: "1px solid rgba(23,35,31,0.05)",
+                }}
+              >
+                <Button
+                  fullWidth
+                  size="small"
+                  sx={{ color: "text.secondary", fontWeight: 600 }}
+                >
+                  View all activity
+                </Button>
+              </Box>
+            )}
           </Menu>
         </Toolbar>
       </AppBar>
@@ -431,82 +611,264 @@ export const SaaSLayout = () => {
         sx={{
           display: { md: "none" },
           "& .MuiDrawer-paper": {
-            width: 292,
-            bgcolor: "#042A2C",
+            width: 320,
+            background:
+              "linear-gradient(165deg, #042A2C 0%, #063C35 40%, #0F5E4D 75%, #1A2521 100%)",
             color: "white",
             borderLeft: "none",
+            boxShadow: "-12px 0 40px rgba(0,0,0,0.4)",
+            display: "flex",
+            flexDirection: "column",
           },
         }}
       >
+        {/* Mobile Drawer Header */}
         <Stack
           direction="row"
-          sx={{ p: 2, justifyContent: "space-between", alignItems: "center" }}
+          sx={{
+            p: 3,
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(0,0,0,0.12)",
+          }}
         >
           <Logo onDark />
           <IconButton
             onClick={() => setMobileNavOpen(false)}
-            sx={{ color: "white" }}
+            sx={{
+              color: "white",
+              bgcolor: "rgba(255,255,255,0.05)",
+              "&:hover": {
+                bgcolor: "rgba(255,255,255,0.12)",
+                transform: "rotate(90deg)",
+              },
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            }}
           >
-            <MenuIcon />
+            <CloseIcon />
           </IconButton>
         </Stack>
-        <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
-        <List sx={{ px: 2, py: 2 }}>
-          {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
-                <ListItemButton
-                  onClick={() => {
-                    navigate(item.path);
-                    setMobileNavOpen(false);
-                  }}
-                  sx={{
-                    borderRadius: 2,
-                    py: 1.25,
-                    bgcolor: isActive
-                      ? "rgba(255, 255, 255, 0.12)"
-                      : "transparent",
-                    color: isActive ? "common.white" : "rgba(255,255,255,0.72)",
-                    backdropFilter: isActive ? "blur(10px)" : "none",
-                    border: isActive
-                      ? "1px solid rgba(255,255,255,0.16)"
-                      : "1px solid transparent",
-                    borderLeft: isActive
-                      ? "3px solid #DDAA4A"
-                      : "1px solid transparent",
-                    transition:
-                      "background-color 160ms ease, color 160ms ease, border-color 160ms ease",
-                    "&:hover": {
-                      bgcolor: "rgba(255,255,255,0.08)",
-                      color: "white",
-                    },
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      color: isActive ? "#DDAA4A" : "inherit",
-                      minWidth: 44,
+
+        {/* Navigation List */}
+        <Box sx={{ flexGrow: 1, py: 3, overflowY: "auto", px: 2 }}>
+          <Typography
+            variant="overline"
+            sx={{
+              px: 2,
+              mb: 2,
+              display: "block",
+              color: "rgba(255,255,255,0.4)",
+              fontWeight: 700,
+              letterSpacing: "0.15em",
+            }}
+          >
+            Main Menu
+          </Typography>
+          <List disablePadding>
+            {navItems.map((item) => {
+              const isActive = location.pathname.startsWith(item.path);
+              return (
+                <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                  <ListItemButton
+                    onClick={() => {
+                      navigate(item.path);
+                      setMobileNavOpen(false);
                     }}
-                  >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.text}
-                    slotProps={{
-                      primary: {
-                        sx: {
-                          fontWeight: isActive ? 800 : 600,
-                          fontSize: "0.95rem",
+                    sx={{
+                      borderRadius: 2,
+                      py: 1.5,
+                      px: 2,
+                      bgcolor: isActive
+                        ? "rgba(16, 185, 129, 0.15)"
+                        : "transparent",
+                      color: isActive ? "white" : "rgba(255,255,255,0.65)",
+                      border: isActive
+                        ? "1px solid rgba(16, 185, 129, 0.3)"
+                        : "1px solid transparent",
+                      position: "relative",
+                      "&::after": isActive
+                        ? {
+                            content: '""',
+                            position: "absolute",
+                            left: 0,
+                            top: "20%",
+                            bottom: "20%",
+                            width: 4,
+                            bgcolor: "#DDAA4A",
+                            borderRadius: "0 4px 4px 0",
+                          }
+                        : {},
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        bgcolor: "rgba(255,255,255,0.06)",
+                        color: "white",
+                        "& .MuiListItemIcon-root": {
+                          color: "#DDAA4A",
                         },
                       },
                     }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
-        </List>
+                  >
+                    <ListItemIcon
+                      sx={{
+                        color: isActive ? "#DDAA4A" : "inherit",
+                        minWidth: 42,
+                        transition: "color 0.2s ease",
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontWeight: isActive ? 800 : 500,
+                            fontSize: "1rem",
+                            letterSpacing: "0.01em",
+                          },
+                        },
+                      }}
+                    />
+                    {isActive && (
+                      <ChevronIcon sx={{ fontSize: 18, opacity: 0.6 }} />
+                    )}
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
+
+          <Divider sx={{ my: 3, borderColor: "rgba(255,255,255,0.08)" }} />
+
+          <Typography
+            variant="overline"
+            sx={{
+              px: 2,
+              mb: 2,
+              display: "block",
+              color: "rgba(255,255,255,0.4)",
+              fontWeight: 700,
+              letterSpacing: "0.15em",
+            }}
+          >
+            System
+          </Typography>
+          <ListItem disablePadding sx={{ mb: 1 }}>
+            <ListItemButton
+              onClick={() => {
+                navigate("/settings");
+                setMobileNavOpen(false);
+              }}
+              sx={{
+                borderRadius: 2,
+                py: 1.5,
+                px: 2,
+                color: "rgba(255,255,255,0.65)",
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.06)",
+                  color: "white",
+                },
+              }}
+            >
+              <ListItemIcon sx={{ color: "inherit", minWidth: 42 }}>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Account Settings" />
+            </ListItemButton>
+          </ListItem>
+        </Box>
+
+        {/* Mobile Drawer Footer with User Profile */}
+        <Box
+          sx={{
+            p: 2.5,
+            bgcolor: "rgba(0,0,0,0.2)",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <Stack spacing={2.5}>
+            <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+              <Avatar
+                src={
+                  user?.profilePictureUrl
+                    ? `${API_BASE_URL.replace(/\/api\/?$/, "")}${user.profilePictureUrl}`
+                    : undefined
+                }
+                sx={{
+                  width: 48,
+                  height: 48,
+                  bgcolor: "primary.main",
+                  border: "2px solid rgba(255,255,255,0.1)",
+                  fontWeight: 800,
+                }}
+              >
+                {user?.name?.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    color: "white",
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                    mb: 0.25,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    maxWidth: 180,
+                  }}
+                >
+                  {user?.name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "rgba(255,255,255,0.5)",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {user?.role.replace("_", " ")}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              color="error"
+              onClick={handleLogout}
+              startIcon={<Logout />}
+              sx={{
+                py: 1.25,
+                borderRadius: 2,
+                borderColor: "rgba(244, 67, 54, 0.4)",
+                color: "#ff8a80",
+                "&:hover": {
+                  bgcolor: "rgba(244, 67, 54, 0.08)",
+                  borderColor: "#f44336",
+                },
+              }}
+            >
+              Sign Out
+            </Button>
+
+            <Typography
+              variant="caption"
+              align="center"
+              sx={{
+                display: "block",
+                color: "rgba(255,255,255,0.3)",
+                fontSize: "0.7rem",
+                fontWeight: 500,
+              }}
+            >
+              ALYAH PHARMA NET v1.2.0
+            </Typography>
+          </Stack>
+        </Box>
       </Drawer>
 
       <Box

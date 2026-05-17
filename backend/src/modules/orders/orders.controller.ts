@@ -10,6 +10,7 @@ import {
   type PlaceOrderPayload,
   type UpdateOrderStatusPayload,
 } from "./orders.service.js";
+import { createNotification } from "../notifications/notifications.controller.js";
 
 /**
  * Sanitize Mongoose documents for API responses – removes internal fields.
@@ -84,6 +85,15 @@ export const createOrder = async (
       sanitizeForResponse(order),
       session,
     );
+
+    // 🔔 Notify Pharmacy Manager about the new order
+    await createNotification({
+      recipient: order.pharmacyId,
+      title: "New Order Received",
+      message: `A new order (${order._id.toString().slice(-6).toUpperCase()}) has been placed for ${order.items.length} item(s).`,
+      type: "order_update",
+      link: `/orders`,
+    }, session);
 
     await session.commitTransaction();
     session.endSession();
@@ -223,6 +233,15 @@ export const updateOrderStatus = async (
       sanitizeForResponse(order),
       session,
     );
+
+    // 🔔 Notify Customer about the status update
+    await createNotification({
+      recipient: order.customerId,
+      title: "Order Status Updated",
+      message: `Your order (${order._id.toString().slice(-6).toUpperCase()}) status has been updated to '${status}'.`,
+      type: "order_update",
+      link: `/marketplace`, 
+    }, session);
 
     await session.commitTransaction();
     session.endSession();

@@ -1,0 +1,31 @@
+<svg width="440" height="110" viewBox="0 0 440 110" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Alyah Pharma Net Logo">
+  <defs>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#065F46"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5C842"/>
+      <stop offset="100%" stop-color="#D4940A"/>
+    </linearGradient>
+    <filter id="iconShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#065F46" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Icon -->
+  <g filter="url(#iconShadow)">
+    <circle cx="55" cy="55" r="46" fill="url(#iconGrad)"/>
+    <rect x="48" y="28" width="14" height="54" rx="4" fill="#ffffff"/>
+    <rect x="28" y="48" width="54" height="14" rx="4" fill="#ffffff"/>
+  </g>
+
+  <!-- Text -->
+  <g transform="translate(122, 18)">
+    <text x="0" y="38" font-family="'Inter Tight', 'Inter', system-ui, sans-serif" font-size="36" font-weight="800" fill="#0F172A" letter-spacing="-1">ALYAH</text>
+    <circle cx="165" cy="34" r="4" fill="url(#goldGrad)"/>
+    <text x="0" y="62" font-family="'Inter', system-ui, sans-serif" font-size="15" font-weight="600" fill="#059669" letter-spacing="5">PHARMA NET</text>
+    <rect x="0" y="71" width="280" height="1.5" rx="1" fill="url(#goldGrad)" opacity="0.8"/>
+    <text x="0" y="88" font-family="'Inter', system-ui, sans-serif" font-size="10.5" font-weight="400" fill="#64748B" letter-spacing="1.5">CONNECTING PHARMACIES · EMPOWERING PATIENTS</text>
+  </g>
+</svg>

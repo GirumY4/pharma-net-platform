@@ -47,80 +47,7 @@ type AuthSubmitButtonProps = ButtonProps & {
   loadingText?: string;
 };
 
-export const AuthLogo = ({ compact = false }: { compact?: boolean }) => (
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      gap: 1.5,
-      minWidth: 0,
-    }}
-  >
-    <Box
-      aria-label="Pharma-Net logo"
-      sx={{
-        width: compact ? 34 : 44,
-        height: compact ? 34 : 44,
-        flex: "0 0 auto",
-        borderRadius: 2,
-        display: "grid",
-        placeItems: "center",
-        background:
-          "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(214,250,232,0.92) 100%)",
-        boxShadow: "0 12px 30px rgba(0, 0, 0, 0.18)",
-        border: "1px solid rgba(255,255,255,0.5)",
-      }}
-    >
-      <svg
-        width={compact ? 21 : 27}
-        height={compact ? 21 : 27}
-        viewBox="0 0 28 28"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M14 4.5v19M4.5 14h19"
-          stroke="#0F8B6C"
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-        <path
-          d="M7.5 7.5h13v13h-13z"
-          stroke="#DDAA4A"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </Box>
-    <Box sx={{ minWidth: 0 }}>
-      <Typography
-        variant={compact ? "h6" : "h5"}
-        sx={{
-          color: "common.white",
-          fontWeight: 800,
-          letterSpacing: 0,
-          lineHeight: 1,
-          overflowWrap: "anywhere",
-        }}
-      >
-        Pharma-Net
-      </Typography>
-      {!compact && (
-        <Typography
-          variant="caption"
-          sx={{
-            color: "rgba(255,255,255,0.7)",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
-          Medical commerce platform
-        </Typography>
-      )}
-    </Box>
-  </Box>
-);
+import { Logo } from "../../../components/Logo";
 
 export const AuthShell = ({
   brand,
@@ -182,7 +109,7 @@ export const AuthShell = ({
               zIndex: 1,
             }}
           >
-            <AuthLogo />
+            <Logo onDark />
 
             <Box sx={{ mt: { xs: 6, md: 9 }, mb: 4 }}>
               <Typography

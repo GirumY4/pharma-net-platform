@@ -22,6 +22,7 @@ import {
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/useAuth";
+import { MarketplaceFloatingUtilities } from "../components/MarketplaceFloatingUtilities";
 import { MarketplaceHero } from "../components/MarketplaceHero";
 import { SearchResultsGrid } from "../components/SearchResultsGrid";
 import { SmartFiltersSidebar } from "../components/SmartFiltersSidebar";
@@ -261,6 +262,63 @@ export const MarketplacePage = () => {
     selectedMedicine,
   ]);
 
+  const handleAddToCart = useCallback(() => {
+    if (!selectedMedicine) return;
+
+    const quantity = Math.max(1, Math.floor(orderQuantity));
+    if (quantity > selectedMedicine.totalStock) {
+      setToast({
+        open: true,
+        message: `Only ${selectedMedicine.totalStock} units are available.`,
+        severity: "error",
+      });
+      return;
+    }
+
+    try {
+      const saved = localStorage.getItem("pharma_net_cart");
+      const cart = saved ? JSON.parse(saved) : [];
+
+      const existingIdx = cart.findIndex(
+        (i: any) => i.medicineId === selectedMedicine.medicineId,
+      );
+      if (existingIdx >= 0) {
+        cart[existingIdx].quantity = Math.min(
+          cart[existingIdx].quantity + quantity,
+          selectedMedicine.totalStock,
+        );
+      } else {
+        cart.push({
+          medicineId: selectedMedicine.medicineId,
+          name: selectedMedicine.name,
+          pharmacyId: selectedMedicine.pharmacyId,
+          pharmacyName: selectedMedicine.pharmacyName,
+          unitPrice: selectedMedicine.unitPrice,
+          unitOfMeasure: selectedMedicine.unitOfMeasure,
+          quantity: quantity,
+          maxQuantity: selectedMedicine.totalStock,
+          pharmacyPhone: selectedMedicine.pharmacyPhone,
+        });
+      }
+
+      localStorage.setItem("pharma_net_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("cart_updated"));
+
+      setToast({
+        open: true,
+        message: `Added ${quantity} ${selectedMedicine.name} to your cart.`,
+        severity: "success",
+      });
+      setDetailsOpen(false);
+    } catch (err) {
+      setToast({
+        open: true,
+        message: "Failed to add item to cart.",
+        severity: "error",
+      });
+    }
+  }, [orderQuantity, selectedMedicine]);
+
   const lineTotal = selectedMedicine
     ? selectedMedicine.unitPrice * Math.max(1, Math.floor(orderQuantity))
     : 0;
@@ -486,11 +544,18 @@ export const MarketplacePage = () => {
             </Button>
           )}
           <Button
+            variant="outlined"
+            onClick={handleAddToCart}
+            disabled={!selectedMedicine}
+          >
+            Add to Cart
+          </Button>
+          <Button
             variant="contained"
             onClick={handlePlaceOrder}
             disabled={submittingOrder || !selectedMedicine}
           >
-            {submittingOrder ? "Placing..." : "Place Order"}
+            {submittingOrder ? "Placing..." : "Buy Now"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -515,6 +580,8 @@ export const MarketplacePage = () => {
           {toast.message}
         </Alert>
       </Snackbar>
+
+      <MarketplaceFloatingUtilities />
     </Box>
   );
 };
