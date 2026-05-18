@@ -20,7 +20,15 @@ interface UserFilter {
 // ─── Helper: remove sensitive fields before audit logging ──────────────────
 const sanitizeUser = (userDoc: any) => {
   const obj = userDoc.toObject ? userDoc.toObject() : userDoc;
+  delete obj.password;
   delete obj.passwordHash;
+  delete obj.resetPasswordToken;
+  delete obj.resetPasswordExpire;
+  delete obj.deactivationToken;
+  delete obj.deactivationExpire;
+  delete obj.reactivationToken;
+  delete obj.reactivationExpire;
+  delete obj.token;
   delete obj.__v; // optional, removes mongoose version key
   return obj;
 };

@@ -55,7 +55,15 @@ const serializeSnapshot = (doc: any): Record<string, unknown> | null => {
   // Use Mongoose's toObject if available, otherwise shallow clone
   const obj = typeof doc?.toObject === "function" ? doc.toObject() : { ...doc };
   // Remove sensitive/internal fields
+  delete obj.password;
   delete obj.passwordHash;
+  delete obj.resetPasswordToken;
+  delete obj.resetPasswordExpire;
+  delete obj.deactivationToken;
+  delete obj.deactivationExpire;
+  delete obj.reactivationToken;
+  delete obj.reactivationExpire;
+  delete obj.token;
   delete obj.__v;
   return obj as Record<string, unknown>;
 };

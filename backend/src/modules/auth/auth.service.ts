@@ -34,7 +34,10 @@ export const comparePassword = async (
  * - Matches exactly the requirement in API_Documentation.md and Project_Context.md
  */
 export const generateToken = (userId: string, role: string): string => {
-  const secret = process.env.JWT_SECRET || "fallback_secret";
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("❌ JWT_SECRET is not defined in environment variables.");
+  }
   const expiresIn = process.env.JWT_EXPIRATION || "8h";
 
   const payload: JWTPayload = {
