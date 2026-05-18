@@ -20,12 +20,14 @@ export default defineConfig({
     sourcemap: true, // Helpful for debugging in production
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Chunk splitting for optimal browser loading speeds
-          vendor: ["react", "react-dom", "react-router-dom"],
-          mui: ["@mui/material", "@mui/icons-material", "@emotion/react", "@emotion/styled"],
-          charting: ["recharts"], // Isolating heavy charting dependencies
-          utils: ["axios", "lodash", "react-hook-form"],
+        // Safe, smart code-splitting: Only isolate heavy packages (like recharts)
+        // to prevent execution order issues between React and Material UI / Emotion.
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("recharts") || id.includes("d3-") || id.includes("victory-")) {
+              return "charting";
+            }
+          }
         },
       },
     },
