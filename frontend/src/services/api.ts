@@ -7,8 +7,17 @@ import axios, {
 } from "axios";
 import type { ApiError, ApiResponse, ErrorResponse } from "../types";
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// Smart URL Sanitizer: Safely appends "/api" if VITE_API_URL is configured as the root domain in the hosting dashboard
+const getSanitizedBaseUrl = (): string => {
+  const rawUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const trimmed = rawUrl.trim().replace(/\/+$/, ""); // Strip trailing slashes
+  if (!trimmed.endsWith("/api")) {
+    return `${trimmed}/api`;
+  }
+  return trimmed;
+};
+
+export const API_BASE_URL = getSanitizedBaseUrl();
 
 type ApiClientError = Error & {
   code?: ApiError["code"];
