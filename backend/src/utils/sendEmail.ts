@@ -50,15 +50,32 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     },
   };
 
-  const transporter = nodemailer.createTransport(transportConfig);
+  try {
+    const transporter = nodemailer.createTransport(transportConfig);
 
-  const message = {
-    from: `${fromName} <${fromEmail}>`,
-    to: options.email,
-    subject: options.subject,
-    text: options.message,
-    html: options.html,
-  };
+    const message = {
+      from: `${fromName} <${fromEmail}>`,
+      to: options.email,
+      subject: options.subject,
+      text: options.message,
+      html: options.html,
+    };
 
-  await transporter.sendMail(message);
+    await transporter.sendMail(message);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("⚠️ SMTP email sending failed. Falling back to Mock console log in Dev Mode.");
+      console.error("SMTP Error Details:", error);
+      console.log("\n--- EMAIL MOCK (Dev Mode) ---");
+      console.log(`To: ${options.email}`);
+      console.log(`Subject: ${options.subject}`);
+      console.log(`Body:\n${options.message}`);
+      if (options.html) {
+        console.log(`HTML Content: [Present]`);
+      }
+      console.log("-----------------------------\n");
+      return;
+    }
+    throw error;
+  }
 };
