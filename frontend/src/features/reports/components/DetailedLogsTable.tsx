@@ -2,7 +2,12 @@
 import { InfoOutlined, Visibility } from "@mui/icons-material";
 import {
   Box,
+  Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Pagination,
   Paper,
@@ -34,6 +39,7 @@ export const DetailedLogsTable = ({
   onViewAll,
 }: DetailedLogsTableProps) => {
   const [page, setPage] = useState(1);
+  const [selectedTxn, setSelectedTxn] = useState<TransactionLog | null>(null);
   const rowsPerPage = 5;
 
   if (loading) {
@@ -308,7 +314,14 @@ export const DetailedLogsTable = ({
                 </TableCell>
                 <TableCell align="right">
                   <Tooltip title="View details">
-                    <IconButton size="small" sx={{ color: "text.secondary" }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setSelectedTxn(txn)}
+                      sx={{
+                        color: "text.secondary",
+                        "&:hover": { color: "primary.main" },
+                      }}
+                    >
                       <Visibility fontSize="small" />
                     </IconButton>
                   </Tooltip>
@@ -337,6 +350,191 @@ export const DetailedLogsTable = ({
           />
         </Box>
       )}
+
+      <Dialog
+        open={Boolean(selectedTxn)}
+        onClose={() => setSelectedTxn(null)}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+              p: 0.5,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, pb: 1.5, color: "#1E293B" }}>
+          Transaction Details
+        </DialogTitle>
+        <DialogContent dividers sx={{ borderColor: "rgba(0,0,0,0.06)", py: 2.5 }}>
+          {selectedTxn && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 700, textTransform: "uppercase" }}
+                >
+                  Medicine
+                </Typography>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ fontWeight: 700, color: "primary.main" }}
+                >
+                  {selectedTxn.medicineName}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 700, textTransform: "uppercase" }}
+                  >
+                    Type
+                  </Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    <Chip
+                      label={selectedTxn.transactionType}
+                      size="small"
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: "0.75rem",
+                        bgcolor:
+                          selectedTxn.transactionType === "GRN"
+                            ? "rgba(5, 150, 105, 0.12)"
+                            : "rgba(217, 119, 6, 0.12)",
+                        color:
+                          selectedTxn.transactionType === "GRN"
+                            ? "#059669"
+                            : "#D97706",
+                        border: `1px solid ${selectedTxn.transactionType === "GRN" ? "rgba(5, 150, 105, 0.3)" : "rgba(217, 119, 6, 0.3)"}`,
+                      }}
+                    />
+                  </Box>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 700, textTransform: "uppercase" }}
+                  >
+                    Batch Number
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontFamily: "monospace", fontWeight: 650, mt: 0.5 }}
+                  >
+                    {selectedTxn.batchNumber}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 700, textTransform: "uppercase" }}
+                  >
+                    Quantity Changed
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 800,
+                      color:
+                        selectedTxn.quantityChanged > 0 ? "#059669" : "#D97706",
+                      mt: 0.5,
+                    }}
+                  >
+                    {selectedTxn.quantityChanged > 0 ? "+" : ""}
+                    {selectedTxn.quantityChanged} units
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 700, textTransform: "uppercase" }}
+                  >
+                    Date & Time
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 500 }}>
+                    {new Date(selectedTxn.createdAt).toLocaleString([], {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 700, textTransform: "uppercase" }}
+                >
+                  Reason / Remarks
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mt: 0.5,
+                    color: selectedTxn.reason
+                      ? "text.primary"
+                      : "text.secondary",
+                    fontStyle: selectedTxn.reason ? "normal" : "italic",
+                  }}
+                >
+                  {selectedTxn.reason ||
+                    "No remarks provided for this transaction."}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 700, textTransform: "uppercase" }}
+                >
+                  Transaction ID
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontFamily: "monospace",
+                    fontSize: "0.8rem",
+                    color: "text.secondary",
+                    mt: 0.5,
+                  }}
+                >
+                  {selectedTxn._id}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => setSelectedTxn(null)}
+            variant="contained"
+            disableElevation
+            sx={{
+              borderRadius: 2,
+              fontWeight: 700,
+              textTransform: "none",
+              px: 3,
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
