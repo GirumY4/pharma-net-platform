@@ -22,6 +22,7 @@ import {
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/useAuth";
+import SEO from "../../../components/SEO";
 import { MarketplaceFloatingUtilities } from "../components/MarketplaceFloatingUtilities";
 import { MarketplaceHero } from "../components/MarketplaceHero";
 import { SearchResultsGrid } from "../components/SearchResultsGrid";
@@ -32,6 +33,7 @@ import {
   fetchMedicinePublicDetails,
 } from "../services/marketplaceApi";
 import type { MarketplaceFilters, MarketplaceMedicine } from "../types";
+
 
 const DEFAULT_FILTERS: MarketplaceFilters = {
   page: 1,
@@ -323,8 +325,26 @@ export const MarketplacePage = () => {
     ? selectedMedicine.unitPrice * Math.max(1, Math.floor(orderQuantity))
     : 0;
 
+  const marketplaceSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Alyah Pharma Net Marketplace",
+    "url": typeof window !== "undefined" ? `${window.location.origin}/marketplace` : "",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": typeof window !== "undefined" ? `${window.location.origin}/marketplace?search={search_term_string}` : "",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#F7FAF9" }}>
+      <SEO
+        title="Marketplace"
+        description="Browse and purchase high-quality pharmaceutical products from verified pharmacies and suppliers on Alyah Pharma Net."
+        keywords={["pharmaceutical marketplace", "wholesale drugs", "medical supply B2B", "online pharmacy store"]}
+        structuredData={marketplaceSchema}
+      />
       <MarketplaceHero
         onSearch={handleSearch}
         onFilterToggle={(e) => {

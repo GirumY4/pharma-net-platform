@@ -38,6 +38,8 @@ import { RecentOrdersTable } from "../components/RecentOrdersTable";
 import { RevenueTrendCard } from "../components/RevenueTrendCard";
 import { useDashboardData } from "../hooks/useDashboardData";
 import type { DashboardKpi } from "../types";
+import SEO from "../../../components/SEO";
+
 
 /* ── helpers ────────────────────────────────────────────── */
 
@@ -181,6 +183,7 @@ export const DashboardPage = () => {
 
   return (
     <Box sx={{ pb: showManagerActions ? 10 : 0 }}>
+      <SEO title="Dashboard" noIndex={true} />
       {/* ─────────────────── Header ─────────────────── */}
       <Box
         sx={{

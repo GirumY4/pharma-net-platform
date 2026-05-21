@@ -33,6 +33,7 @@ import {
   updateMedicine,
 } from "../services/inventoryApi";
 import type { IMedicine, MedicineFormValues } from "../types";
+import SEO from "../../../components/SEO";
 
 export const InventoryPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -158,6 +159,7 @@ export const InventoryPage = () => {
 
   return (
     <Box>
+      <SEO title="Inventory Management" noIndex={true} />
       {/* ─────────────── Page Header ─────────────── */}
       <Box
         sx={{

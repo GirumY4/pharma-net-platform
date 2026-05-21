@@ -26,9 +26,11 @@ import {
   AuthSubmitButton,
 } from "../components/AuthShell";
 import { useAuth } from "../../../contexts/useAuth";
+import SEO from "../../../components/SEO";
 import { handleApiError } from "../../../utils/errorMapper";
 import { getRoleFromToken } from "../../../utils/authToken";
 import { loginUser } from "../services/authApi";
+
 
 const loginBrand = {
   eyebrow: "Secure pharmacy access",
@@ -104,6 +106,11 @@ export const LoginPage = () => {
 
   return (
     <AuthShell brand={loginBrand} formMaxWidth={500}>
+      <SEO
+        title="Sign In"
+        description="Log in to Alyah Pharma Net to access your dashboard, manage pharmaceutical inventory, track orders, or purchase wholesale medicines."
+        keywords={["pharma net login", "alyah pharma sign in", "pharmaceutical log in"]}
+      />
       <AuthFormHeader
         icon={<LoginOutlined />}
         eyebrow="Welcome back"

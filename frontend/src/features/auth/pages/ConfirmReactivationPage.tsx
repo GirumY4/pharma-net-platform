@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { handleApiError } from "../../../utils/errorMapper";
 import { confirmReactivation } from "../../users/services/usersApi";
+import SEO from "../../../components/SEO";
+
 
 export const ConfirmReactivationPage = () => {
   const { token } = useParams<{ token: string }>();
@@ -47,6 +49,7 @@ export const ConfirmReactivationPage = () => {
         p: 2,
       }}
     >
+      <SEO title="Confirm Reactivation" noIndex={true} />
       <Box
         sx={{
           maxWidth: 400,

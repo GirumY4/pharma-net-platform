@@ -27,6 +27,7 @@ import type {
   PaymentStatus,
   UpdateOrderStatusPayload,
 } from "../types";
+import SEO from "../../../components/SEO";
 
 export const OrdersPage = () => {
   const { user } = useAuth();
@@ -109,6 +110,7 @@ export const OrdersPage = () => {
 
   return (
     <Box>
+      <SEO title="Orders" noIndex={true} />
       {/* Page Header */}
       <Box sx={{ mb: 4 }}>
         <Box

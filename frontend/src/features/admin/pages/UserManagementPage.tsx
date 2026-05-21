@@ -32,6 +32,7 @@ import { handleApiError } from "../../../utils/errorMapper";
 import { useAuth } from "../../../contexts/useAuth";
 import { Edit, Block } from "@mui/icons-material";
 import type { IUser } from "../../../types";
+import SEO from "../../../components/SEO";
 
 export const UserManagementPage = () => {
   useAuth();
@@ -113,6 +114,7 @@ export const UserManagementPage = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      <SEO title="User Management" noIndex={true} />
       {/* Header */}
       <Box
         sx={{

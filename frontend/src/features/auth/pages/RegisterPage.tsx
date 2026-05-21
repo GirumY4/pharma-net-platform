@@ -38,8 +38,10 @@ import {
 } from "../components/AuthShell";
 import { handleApiError } from "../../../utils/errorMapper";
 import { registerUser } from "../services/authApi";
+import SEO from "../../../components/SEO";
 
 const redirectDelay = 5;
+
 
 const registerBrand = {
   eyebrow: "Create your access",
@@ -161,6 +163,11 @@ export const RegisterPage = () => {
 
   return (
     <AuthShell brand={registerBrand} formMaxWidth={660}>
+      <SEO
+        title="Create Account"
+        description="Register a pharmacy manager or public user account on Alyah Pharma Net to coordinate orders, track shipments, and discover available medicines."
+        keywords={["pharma net register", "create pharmacy account", "pharma net signup"]}
+      />
       {success ? (
         <Box sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
           <Box

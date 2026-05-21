@@ -27,6 +27,8 @@ import {
 } from "../components/AuthShell";
 import { handleApiError } from "../../../utils/errorMapper";
 import { resetPassword } from "../services/authApi";
+import SEO from "../../../components/SEO";
+
 
 const resetPasswordBrand = {
   eyebrow: "Secure credential reset",
@@ -114,6 +116,7 @@ export const ResetPasswordPage = () => {
 
   return (
     <AuthShell brand={resetPasswordBrand} formMaxWidth={500}>
+      <SEO title="Reset Password" noIndex={true} />
       {success ? (
         <Box sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>
           <Box

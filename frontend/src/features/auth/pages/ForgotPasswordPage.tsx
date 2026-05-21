@@ -23,6 +23,8 @@ import {
 } from "../components/AuthShell";
 import { handleApiError } from "../../../utils/errorMapper";
 import { forgotPassword } from "../services/authApi";
+import SEO from "../../../components/SEO";
+
 
 const forgotPasswordBrand = {
   eyebrow: "Account recovery",
@@ -78,6 +80,7 @@ export const ForgotPasswordPage = () => {
 
   return (
     <AuthShell brand={forgotPasswordBrand} formMaxWidth={500}>
+      <SEO title="Forgot Password" noIndex={true} />
       <Button
         startIcon={<ArrowBack />}
         onClick={() => navigate("/login")}

@@ -19,6 +19,7 @@ import { TopMedicinesChart } from "../components/TopMedicinesChart";
 import { useReports } from "../hooks/useReports";
 import { exportReport } from "../services/reportsApi";
 import type { DateRange } from "../types";
+import SEO from "../../../components/SEO";
 
 export const ReportsPage = () => {
   const { user } = useAuth();
@@ -103,6 +104,7 @@ export const ReportsPage = () => {
 
   return (
     <Box>
+      <SEO title="Reports & Analytics" noIndex={true} />
       <ReportsHeader
         dateRange={dateRange}
         onDateRangeChange={handleDateRangeChange}

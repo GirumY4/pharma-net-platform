@@ -4,6 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../contexts/useAuth";
 import { handleApiError } from "../../../utils/errorMapper";
 import { confirmDeactivation } from "../../users/services/usersApi";
+import SEO from "../../../components/SEO";
+
 
 export const ConfirmDeactivationPage = () => {
   const { token } = useParams<{ token: string }>();
@@ -50,6 +52,7 @@ export const ConfirmDeactivationPage = () => {
         p: 2,
       }}
     >
+      <SEO title="Confirm Deactivation" noIndex={true} />
       <Box
         sx={{
           maxWidth: 400,

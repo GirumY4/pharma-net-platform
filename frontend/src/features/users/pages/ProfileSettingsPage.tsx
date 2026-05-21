@@ -10,6 +10,7 @@ import { ProfilePictureUpload } from "../components/ProfilePictureUpload";
 import { ProfileSkeleton } from "../components/ProfileSkeleton";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { deactivateAccount } from "../services/usersApi";
+import SEO from "../../../components/SEO";
 
 export const ProfileSettingsPage = () => {
   const { profile, loading, error, refresh } = useUserProfile(true);
@@ -49,6 +50,7 @@ export const ProfileSettingsPage = () => {
 
   return (
     <Box sx={{ mb: 5, px: { xs: 2.5, sm: 4, md: 5 } }}>
+      <SEO title="Profile Settings" noIndex={true} />
       <Box
         sx={{
           display: "flex",
