@@ -330,10 +330,19 @@ const marketplaceSchema = {
     "@type": "WebSite",
     "name": "Alyah Pharma Net Marketplace",
     "url": import.meta.env.VITE_SITE_URL || "https://alyah-pharma-net.vercel.app",
+    "description": "Search real-time medicine availability across pharmacies in Ethiopia",
     "potentialAction": {
       "@type": "SearchAction",
       "target": `${import.meta.env.VITE_SITE_URL || "https://alyah-pharma-net.vercel.app"}/marketplace?name={search_term_string}`,
       "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Alyah Pharma Net",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://alyah-pharma-net.vercel.app/alyah-logo-light.svg"
+      }
     }
   };
 
