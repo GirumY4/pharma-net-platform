@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { MarketplaceMedicine } from "../types";
+import { SEO } from "../../../components/SEO";
 
 interface MedicineCardProps {
    medicine: MarketplaceMedicine;
@@ -31,7 +32,31 @@ export const MedicineCard = ({
   const isAvailable = medicine.totalStock > 0;
   const isLowStock = medicine.totalStock > 0 && medicine.totalStock < 50;
 
+  const medicineSchema = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": medicine.name,
+  "sku": medicine.sku,
+  "category": medicine.category,
+  "offers": {
+    "@type": "Offer",
+    "price": medicine.unitPrice,
+    "priceCurrency": "ETB",
+    "availability": medicine.totalStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    "seller": {
+      "@type": "Pharmacy",
+      "name": medicine.pharmacyName
+    }
+  }
+};
+
   return (
+    <>
+    <SEO
+  title={`${medicine.name} - ${medicine.pharmacyName}`}
+  description={`${medicine.name} available at ${medicine.pharmacyName} for ETB ${medicine.unitPrice}. ${medicine.totalStock} in stock.`}
+  structuredData={medicineSchema}
+/>
     <Fade in timeout={300 + index * 50}>
       <Paper
         elevation={0}
@@ -213,5 +238,6 @@ export const MedicineCard = ({
         </Stack>
       </Paper>
     </Fade>
+    </>
   );
 };

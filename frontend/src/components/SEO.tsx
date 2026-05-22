@@ -22,8 +22,8 @@ export interface SEOProps {
 
 export const SEO: React.FC<SEOProps> = ({
   title,
-  description = "Pharma-Net is Alyah's premium B2B platform connecting pharmacies and medicine suppliers.",
-  keywords = ["pharmaceuticals", "pharmacy b2b", "wholesale medicine", "pharma net", "alyah pharma"],
+  description = "Alyah Pharma-Net is a B2B2C Multi-Tenant SaaS platform designed to modernize the pharmaceutical supply chain by connecting local Pharmacies directly with Public Users (Patients). In the current landscape, manual communication and lack of visibility mean patients struggle to find out which local pharmacies have their required medications in stock.",
+  keywords = ["pharmaceuticals", "pharmacy b2b2c", "wholesale medicine", "pharma net", "alyah pharma", "pharma net africa", "pharma net ethiopia", "alyah pharma africa", "alyah pharma ethiopia"],
   ogType = "website",
   ogImage = "/alyah-logo-light.svg",
   canonicalUrl,
@@ -32,13 +32,19 @@ export const SEO: React.FC<SEOProps> = ({
 }) => {
   const siteTitle = `${title} | Alyah Pharma Net`;
   const formattedKeywords = Array.isArray(keywords) ? keywords.join(", ") : keywords;
+  const configuredSiteUrl = import.meta.env.VITE_SITE_URL?.replace(/\/+$/, "");
 
-  // Resolve canonical URL safely on the client side
-  const currentUrl =
-    canonicalUrl ||
-    (typeof window !== "undefined"
-      ? `${window.location.origin}${window.location.pathname}`
-      : "");
+  const currentPath =
+    typeof window !== "undefined" ? window.location.pathname : "";
+  const currentOrigin =
+    configuredSiteUrl ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  const resolvedCanonicalPath = canonicalUrl
+    ? canonicalUrl
+    : currentPath
+      ? `${currentOrigin}${currentPath}`
+      : currentOrigin;
+  const currentUrl = resolvedCanonicalPath.replace(/\/+$/, "") || resolvedCanonicalPath;
 
   const robotsContent = noIndex ? "noindex, nofollow" : "index, follow";
 

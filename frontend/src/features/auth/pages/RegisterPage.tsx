@@ -167,6 +167,7 @@ export const RegisterPage = () => {
         title="Create Account"
         description="Register a pharmacy manager or public user account on Alyah Pharma Net to coordinate orders, track shipments, and discover available medicines."
         keywords={["pharma net register", "create pharmacy account", "pharma net signup"]}
+        noIndex={true}
       />
       {success ? (
         <Box sx={{ textAlign: "center", py: { xs: 1, sm: 2 } }}>

@@ -6,6 +6,7 @@ export interface MarketplaceMedicine {
   category: string;
   description?: string;
   unitPrice: number;
+  sku?: string;
   unitOfMeasure: "tablet" | "capsule" | "vial" | "bottle" | "sachet" | "unit";
   totalStock: number;
   pharmacyId: string;

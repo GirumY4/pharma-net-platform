@@ -325,14 +325,14 @@ export const MarketplacePage = () => {
     ? selectedMedicine.unitPrice * Math.max(1, Math.floor(orderQuantity))
     : 0;
 
-  const marketplaceSchema = {
+const marketplaceSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Alyah Pharma Net Marketplace",
-    "url": typeof window !== "undefined" ? `${window.location.origin}/marketplace` : "",
+    "url": import.meta.env.VITE_SITE_URL || "https://alyah-pharma-net.vercel.app",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": typeof window !== "undefined" ? `${window.location.origin}/marketplace?search={search_term_string}` : "",
+      "target": `${import.meta.env.VITE_SITE_URL || "https://alyah-pharma-net.vercel.app"}/marketplace?name={search_term_string}`,
       "query-input": "required name=search_term_string"
     }
   };
@@ -340,9 +340,9 @@ export const MarketplacePage = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#F7FAF9" }}>
       <SEO
-        title="Marketplace"
+        title="The Marketplace where you can Find Medicines Near You"
         description="Browse and purchase high-quality pharmaceutical products from verified pharmacies and suppliers on Alyah Pharma Net."
-        keywords={["pharmaceutical marketplace", "wholesale drugs", "medical supply B2B", "online pharmacy store"]}
+        keywords={["medicine search", "pharmacy near me", "pharmaceutical marketplace","buy medicine online Ethiopia", "wholesale drugs", "medical supply B2B", "online pharmacy store"]}
         structuredData={marketplaceSchema}
       />
       <MarketplaceHero

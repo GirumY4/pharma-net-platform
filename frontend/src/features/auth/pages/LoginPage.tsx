@@ -110,6 +110,7 @@ export const LoginPage = () => {
         title="Sign In"
         description="Log in to Alyah Pharma Net to access your dashboard, manage pharmaceutical inventory, track orders, or purchase wholesale medicines."
         keywords={["pharma net login", "alyah pharma sign in", "pharmaceutical log in"]}
+        noIndex={true}
       />
       <AuthFormHeader
         icon={<LoginOutlined />}

@@ -6,6 +6,7 @@ import {
   CircularProgress,
   Divider,
   FormControl,
+  FormHelperText,
   InputLabel,
   MenuItem,
   Select,
@@ -15,6 +16,7 @@ import {
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { handleApiError } from "../../../utils/errorMapper";
+import { CATEGORIES } from "../../marketplace/types";
 import type { IMedicine, MedicineFormValues } from "../types";
 
 interface MedicineFormProps {
@@ -33,6 +35,11 @@ const UNIT_OPTIONS: MedicineFormValues["unitOfMeasure"][] = [
   "unit",
 ];
 
+const OTHER_CATEGORY_OPTION = "Other";
+const DEFAULT_CATEGORY_OPTIONS = CATEGORIES.filter(
+  (category) => category !== OTHER_CATEGORY_OPTION,
+);
+
 export const MedicineForm = ({
   onSubmit,
   onCancel,
@@ -40,6 +47,8 @@ export const MedicineForm = ({
   loading,
 }: MedicineFormProps) => {
   const [error, setError] = useState<string | null>(null);
+  const [selectedCategoryOption, setSelectedCategoryOption] =
+    useState<string>("");
 
   const {
     control,
@@ -70,6 +79,10 @@ export const MedicineForm = ({
 
   useEffect(() => {
     if (initialData) {
+      const isDefaultCategory = DEFAULT_CATEGORY_OPTIONS.some(
+        (category) => category === initialData.category,
+      );
+
       reset({
         name: initialData.name,
         sku: initialData.sku,
@@ -80,8 +93,12 @@ export const MedicineForm = ({
         unitOfMeasure: initialData.unitOfMeasure,
         reorderThreshold: initialData.reorderThreshold,
       });
+      setSelectedCategoryOption(
+        isDefaultCategory ? initialData.category : OTHER_CATEGORY_OPTION,
+      );
     } else {
       reset();
+      setSelectedCategoryOption("");
     }
     setError(null);
   }, [initialData, reset]);
@@ -91,6 +108,7 @@ export const MedicineForm = ({
     try {
       await onSubmit(data, initialData?._id);
       reset(); // Reset form on success
+      setSelectedCategoryOption("");
     } catch (err) {
       const message = handleApiError(err);
       setError(message);
@@ -180,14 +198,54 @@ export const MedicineForm = ({
           control={control}
           rules={{ required: "Category is required" }}
           render={({ field }) => (
-            <TextField
-              {...field}
-              label="Category *"
-              fullWidth
-              error={!!errors.category}
-              helperText={errors.category?.message}
-              size="small"
-            />
+            <Box sx={{ display: "grid", gap: 1 }}>
+              <FormControl fullWidth size="small" error={!!errors.category}>
+                <InputLabel>Category *</InputLabel>
+                <Select
+                  value={selectedCategoryOption}
+                  label="Category *"
+                  onChange={(event) => {
+                    const selectedValue = event.target.value;
+                    setSelectedCategoryOption(selectedValue);
+
+                    if (selectedValue === OTHER_CATEGORY_OPTION) {
+                      field.onChange("");
+                      return;
+                    }
+
+                    field.onChange(selectedValue);
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>Select Category</em>
+                  </MenuItem>
+                  {DEFAULT_CATEGORY_OPTIONS.map((category) => (
+                    <MenuItem key={category} value={category}>
+                      {category}
+                    </MenuItem>
+                  ))}
+                  <MenuItem value={OTHER_CATEGORY_OPTION}>
+                    {OTHER_CATEGORY_OPTION}
+                  </MenuItem>
+                </Select>
+                {!!errors.category && (
+                  <FormHelperText>{errors.category.message}</FormHelperText>
+                )}
+              </FormControl>
+
+              {selectedCategoryOption === OTHER_CATEGORY_OPTION && (
+                <TextField
+                  value={field.value || ""}
+                  onChange={(event) => field.onChange(event.target.value)}
+                  onBlur={field.onBlur}
+                  label="Custom Category *"
+                  fullWidth
+                  error={!!errors.category}
+                  helperText={errors.category?.message}
+                  size="small"
+                />
+              )}
+            </Box>
           )}
         />
       </Box>
