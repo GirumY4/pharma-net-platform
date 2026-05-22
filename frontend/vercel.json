@@ -3,7 +3,7 @@
     { "source": "/index.html", "destination": "/", "permanent": true }
   ],
   "rewrites": [
-    { "handle": "filesystem" },
+  
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
