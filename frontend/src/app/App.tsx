@@ -25,6 +25,7 @@ import { ReportsPage } from "../features/reports/pages/ReportsPage";
 import { ProfileSettingsPage } from "../features/users";
 import { ProtectedRoute } from "../routes/ProtectedRoute";
 import { RoleRoute } from "../routes/RoleRoute";
+import { LandingPage } from "../features/landing-page";
 
 const CenteredPage = ({ children }: { children: ReactNode }) => (
   <Box
@@ -85,7 +86,11 @@ const NotFound = () => (
     <Typography variant="body1" color="text.secondary" sx={{ mt: 1.5 }}>
       The page you are looking for does not exist.
     </Typography>
-    <Stack direction="row" spacing={1.5} sx={{ justifyContent: "center", mt: 3 }}>
+    <Stack
+      direction="row"
+      spacing={1.5}
+      sx={{ justifyContent: "center", mt: 3 }}
+    >
       <Button href="/marketplace" variant="contained">
         Marketplace
       </Button>
@@ -98,7 +103,7 @@ const NotFound = () => (
 
 export const App = () => (
   <Routes>
-    <Route path="/" element={<HomeRedirect />} />
+    <Route path="/" element={<LandingPage />} />
 
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
