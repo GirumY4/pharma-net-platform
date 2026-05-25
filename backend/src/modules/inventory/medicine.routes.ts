@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/rbac.middleware.js";
+import { requireApprovedPharmacy } from "../../middlewares/approval.middleware.js";
 import {
   createMedicine,
   deleteMedicine,
@@ -16,6 +17,7 @@ router.get("/marketplace", getMarketplaceMedicines);
 router.get("/marketplace/:id", getMarketplaceMedicineById);
 
 router.use(protect);
+router.use(requireApprovedPharmacy);
 
 router
   .route("/")

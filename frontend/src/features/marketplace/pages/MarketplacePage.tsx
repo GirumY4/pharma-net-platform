@@ -40,6 +40,8 @@ const DEFAULT_FILTERS: MarketplaceFilters = {
   limit: 12,
 };
 
+const ORDER_SYSTEM_ENABLED = false;
+
 export const MarketplacePage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, role } = useAuth();
@@ -197,6 +199,15 @@ export const MarketplacePage = () => {
   const handlePlaceOrder = useCallback(async () => {
     if (!selectedMedicine) return;
 
+    if (!ORDER_SYSTEM_ENABLED) {
+      setToast({
+        open: true,
+        message: "Marketplace ordering is temporarily unavailable.",
+        severity: "info",
+      });
+      return;
+    }
+
     if (!isAuthenticated) {
       navigate("/login", { state: { from: { pathname: "/marketplace" } } });
       return;
@@ -266,6 +277,15 @@ export const MarketplacePage = () => {
 
   const handleAddToCart = useCallback(() => {
     if (!selectedMedicine) return;
+
+    if (!ORDER_SYSTEM_ENABLED) {
+      setToast({
+        open: true,
+        message: "Marketplace cart checkout is temporarily unavailable.",
+        severity: "info",
+      });
+      return;
+    }
 
     const quantity = Math.max(1, Math.floor(orderQuantity));
     if (quantity > selectedMedicine.totalStock) {
@@ -575,16 +595,22 @@ const marketplaceSchema = {
           <Button
             variant="outlined"
             onClick={handleAddToCart}
-            disabled={!selectedMedicine}
+            disabled={!ORDER_SYSTEM_ENABLED || !selectedMedicine}
           >
             Add to Cart
           </Button>
           <Button
             variant="contained"
             onClick={handlePlaceOrder}
-            disabled={submittingOrder || !selectedMedicine}
+            disabled={
+              !ORDER_SYSTEM_ENABLED || submittingOrder || !selectedMedicine
+            }
           >
-            {submittingOrder ? "Placing..." : "Buy Now"}
+            {!ORDER_SYSTEM_ENABLED
+              ? "Ordering unavailable"
+              : submittingOrder
+                ? "Placing..."
+                : "Buy Now"}
           </Button>
         </DialogActions>
       </Dialog>

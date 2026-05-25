@@ -35,8 +35,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useState, type SyntheticEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   AuthFormHeader,
   AuthShell,
@@ -48,6 +48,14 @@ import SEO from "../../../components/SEO";
 
 const redirectDelay = 5;
 
+const planLabels = {
+  single_pharmacy: "Single Pharmacy",
+  professional: "Professional",
+  enterprise_chain: "Enterprise Chain",
+} as const;
+
+const isKnownPlan = (value: string | null): value is keyof typeof planLabels =>
+  value === "single_pharmacy" || value === "professional";
 
 const registerBrand = {
   eyebrow: "Create your access",
@@ -280,8 +288,18 @@ const MapPickerDialog = ({
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedPlan = searchParams.get("plan");
+  const billingRedirectPlan = isKnownPlan(requestedPlan)
+    ? requestedPlan
+    : null;
+  const selectedPlanLabel = billingRedirectPlan
+    ? planLabels[billingRedirectPlan]
+    : null;
 
-  const [role, setRole] = useState<"pharmacy_manager" | "public_user" | "">("");
+  const [role, setRole] = useState<"pharmacy_manager" | "public_user" | "">(
+    selectedPlanLabel ? "pharmacy_manager" : "",
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -300,12 +318,19 @@ export const RegisterPage = () => {
 
   const isPharmacy = role === "pharmacy_manager";
 
+  const buildLoginState = useCallback(() => ({
+    message: "Registration successful. Please sign in.",
+    ...(billingRedirectPlan && role === "pharmacy_manager"
+      ? { from: { pathname: "/billing", search: `?plan=${billingRedirectPlan}` } }
+      : {}),
+  }), [billingRedirectPlan, role]);
+
   useEffect(() => {
     if (!success) return;
 
     if (countdown <= 0) {
       navigate("/login", {
-        state: { message: "Registration successful. Please sign in." },
+        state: buildLoginState(),
         replace: true,
       });
       return;
@@ -316,7 +341,7 @@ export const RegisterPage = () => {
       1000,
     );
     return () => window.clearTimeout(timer);
-  }, [success, countdown, navigate]);
+  }, [success, countdown, navigate, buildLoginState]);
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -363,7 +388,7 @@ export const RegisterPage = () => {
 
   const handleManualRedirect = () => {
     navigate("/login", {
-      state: { message: "Registration successful. Please sign in." },
+      state: buildLoginState(),
       replace: true,
     });
   };
@@ -455,6 +480,13 @@ export const RegisterPage = () => {
           {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
               {error}
+            </Alert>
+          )}
+
+          {selectedPlanLabel && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              You selected the {selectedPlanLabel} billing path. Pharmacy
+              manager accounts continue to billing after sign in.
             </Alert>
           )}
 

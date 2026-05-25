@@ -10,6 +10,9 @@ import { logAction } from "../../utils/auditLogger.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import User from "./user.model.js";
 
+const getPharmacyTrialEndsAt = () =>
+  new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
 // ─── Type for query filters (improves type safety) ─────────────────────────
 interface UserFilter {
   isDeleted?: boolean;
@@ -862,7 +865,19 @@ export const updateUser = async (
 
     // Update fields if provided
     if (name !== undefined) user.name = name;
-    if (role !== undefined) user.role = role;
+    if (role !== undefined) {
+      user.role = role;
+      if (role === "pharmacy_manager" && user.subscriptionStatus === "none") {
+        user.subscriptionStatus = "trialing";
+        user.subscriptionCurrentPeriodEnd = getPharmacyTrialEndsAt();
+      }
+      if (role !== "pharmacy_manager") {
+        user.subscriptionStatus = "none";
+        user.subscriptionPlan = undefined;
+        user.subscriptionCurrentPeriodEnd = undefined;
+        user.subscriptionLastBillingSubmissionId = undefined;
+      }
+    }
     if (isActive !== undefined) user.isActive = isActive;
 
     await user.save();

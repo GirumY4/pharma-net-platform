@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/rbac.middleware.js";
+import { requireApprovedPharmacy } from "../../middlewares/approval.middleware.js";
 import {
   confirmDeactivation,
   confirmReactivation,
@@ -20,8 +21,8 @@ const router = Router();
 
 // Route accessible to any authenticated user
 router.get("/me", protect, getMe);
-router.patch("/me", protect, updateMe);
-router.delete("/me", protect, deactivateMe);
+router.patch("/me", protect, requireApprovedPharmacy, updateMe);
+router.delete("/me", protect, requireApprovedPharmacy, deactivateMe);
 router.post("/confirm-deactivation/:token", confirmDeactivation);
 
 // Routes accessible ONLY to admins
@@ -40,8 +41,8 @@ router.post("/confirm-reactivation/:token", confirmReactivation);
 // Profile picture upload endpoints
 router
   .route("/me/profile-picture")
-  .post(protect, uploadProfilePicture)
-  .delete(protect, removeProfilePicture);
+  .post(protect, requireApprovedPharmacy, uploadProfilePicture)
+  .delete(protect, requireApprovedPharmacy, removeProfilePicture);
 
 // Add this to users.routes.ts
 router.route("/:id").patch(protect, authorizeRoles(["admin"]), updateUser);

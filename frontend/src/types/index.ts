@@ -20,6 +20,16 @@ export interface IUser {
   city?: string;
   location?: ILocation | null;
   profilePictureUrl?: string;
+  subscriptionPlan?: "single_pharmacy" | "professional" | "enterprise_chain";
+  subscriptionStatus?:
+    | "none"
+    | "trialing"
+    | "pending_review"
+    | "active"
+    | "past_due"
+    | "suspended";
+  subscriptionCurrentPeriodEnd?: string;
+  subscriptionLastBillingSubmissionId?: string;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt?: string | null; // ISO date string or null
@@ -92,8 +102,12 @@ export const isErrorResponse = <T>(
 export interface AuthUser {
   _id: string;
   name: string;
+  email?: string;
   role: UserRole;
   profilePictureUrl?: string;
+  subscriptionPlan?: IUser["subscriptionPlan"];
+  subscriptionStatus?: IUser["subscriptionStatus"];
+  subscriptionCurrentPeriodEnd?: string;
 }
 
 /**

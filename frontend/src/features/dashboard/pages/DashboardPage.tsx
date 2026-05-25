@@ -57,6 +57,8 @@ const getDefaultDateRange = () => {
   return { startDate: toInputDate(start), endDate: toInputDate(end) };
 };
 
+const ORDER_SYSTEM_ENABLED = false;
+
 const formatCurrency = (value: number) =>
   `ETB ${Math.round(value).toLocaleString()}`;
 
@@ -408,7 +410,7 @@ export const DashboardPage = () => {
             actionError={actionError}
             actionLoadingId={actionLoadingId}
             onRefresh={refresh}
-            onApproveOrder={approveOrder}
+            onApproveOrder={ORDER_SYSTEM_ENABLED ? approveOrder : undefined}
           />
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>
@@ -502,9 +504,11 @@ export const DashboardPage = () => {
             </MenuItem>
             <MenuItem
               onClick={() => {
+                if (!ORDER_SYSTEM_ENABLED) return;
                 setQuickActionAnchor(null);
                 navigate("/orders?status=pending");
               }}
+              disabled={!ORDER_SYSTEM_ENABLED}
               sx={{ py: 1.5 }}
             >
               <ListItemIcon>

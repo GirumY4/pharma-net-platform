@@ -13,6 +13,7 @@ import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 // Import routes
 import auditRoutes from "./modules/auditLogs/auditLogs.routes.js";
 import authRoutes from "./modules/auth/auth.routes.js";
+import billingRoutes from "./modules/billing/billing.routes.js";
 import inventoryTransactionRoutes from "./modules/inventory/inventoryTransaction.routes.js";
 import medicineRoutes from "./modules/inventory/medicine.routes.js";
 import orderRoutes from "./modules/orders/orders.routes.js";
@@ -81,6 +82,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/billing", billingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/inventory-transactions", inventoryTransactionRoutes);

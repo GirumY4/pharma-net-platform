@@ -1,6 +1,7 @@
 // src/modules/reports/reports.controller.ts
 import type { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
+import User from "../users/user.model.js";
 import {
   generateDashboardReport,
   generateInventoryReport,
@@ -165,6 +166,13 @@ export const getDashboardReport = async (
       endDate: endDate.toISOString(),
       ...report,
     };
+
+    const user = await User.findById(pharmacyId);
+    if (user && user.subscriptionPlan === "single_pharmacy") {
+      reportData.revenueTrend = [];
+      reportData.topMedicines = [];
+      reportData.stockHealth = { healthy: 0, low: 0, critical: 0, out: 0 };
+    }
 
     // CSV export handling
     if (req.query.export === "csv") {
@@ -432,6 +440,16 @@ export const getExpiringReport = async (
     const beforeDate = req.query.before
       ? parseDate(req.query.before as string, "before")
       : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // Default: 90 days from now
+
+    const user = await User.findById(pharmacyId);
+    if (user && user.subscriptionPlan === "single_pharmacy") {
+      const error = new Error(
+        "PLAN_LIMIT_EXCEEDED: Expiry batch forecast (FEFO report) is not available on the Single Pharmacy plan.",
+      ) as any;
+      error.statusCode = 403;
+      error.code = "PLAN_LIMIT_EXCEEDED";
+      throw error;
+    }
 
     const items = await getExpiringBatches(pharmacyId, beforeDate);
 

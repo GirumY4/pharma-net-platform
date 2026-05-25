@@ -63,6 +63,8 @@ const ORDER_STEPS: { label: string; key: OrderStatus }[] = [
   { label: "Ready", key: "ready" },
 ];
 
+const ORDER_SYSTEM_ENABLED = false;
+
 const isUnauthorizedNotificationError = (err: unknown) =>
   typeof err === "object" &&
   err !== null &&
@@ -252,6 +254,15 @@ export const MarketplaceFloatingUtilities = () => {
   };
 
   const handleCheckout = async () => {
+    if (!ORDER_SYSTEM_ENABLED) {
+      setToast({
+        open: true,
+        message: "Marketplace checkout is temporarily unavailable.",
+        severity: "info",
+      });
+      return;
+    }
+
     if (!isAuthenticated) {
       setCartOpen(false);
       navigate("/login", {
@@ -324,6 +335,11 @@ export const MarketplaceFloatingUtilities = () => {
   };
 
   const handleTrackOrder = async (id?: string) => {
+    if (!ORDER_SYSTEM_ENABLED) {
+      setTrackerError("Order tracking is temporarily unavailable.");
+      return;
+    }
+
     const targetId = id || trackerId.trim();
     if (!targetId) {
       setTrackerError("Please enter an Order ID.");
@@ -395,6 +411,7 @@ export const MarketplaceFloatingUtilities = () => {
           <Fab
             aria-label="tracker"
             onClick={() => setTrackerOpen(true)}
+            disabled={!ORDER_SYSTEM_ENABLED}
             sx={{
               bgcolor: "rgba(255, 255, 255, 0.7)",
               backdropFilter: "blur(12px)",
@@ -452,6 +469,7 @@ export const MarketplaceFloatingUtilities = () => {
           <Fab
             aria-label="cart"
             onClick={() => setCartOpen(true)}
+            disabled={!ORDER_SYSTEM_ENABLED}
             sx={{
               bgcolor: "rgba(255, 255, 255, 0.75)",
               backdropFilter: "blur(12px)",
