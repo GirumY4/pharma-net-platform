@@ -64,6 +64,7 @@ const isUnauthorizedNotificationError = (err: unknown) =>
     ("code" in err && err.code === "UNAUTHORIZED"));
 
 import { Logo } from "../Logo";
+import { Footer } from "./Footer";
 
 interface NavItem {
   text: string;
@@ -228,10 +229,10 @@ export const SaaSLayout = () => {
         sx={{
           width: "100%",
           height: TOP_BAR_HEIGHT,
-          bgcolor: "rgba(255, 255, 255, 0.82)",
-          backdropFilter: "blur(22px)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.78)",
-          boxShadow: "0 14px 38px rgba(18, 32, 28, 0.08)",
+          bgcolor: "rgba(247, 250, 249, 0.82)",
+          backdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(23, 35, 31, 0.08)",
+          boxShadow: "none",
           color: "text.primary",
           zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
@@ -256,7 +257,7 @@ export const SaaSLayout = () => {
                     <Button
                       onClick={() => navigate(item.path)}
                       startIcon={item.icon}
-                      variant={isActive ? "contained" : "text"}
+                      variant="text"
                       disableElevation
                       disabled={item.disabled}
                       sx={{
@@ -266,16 +267,16 @@ export const SaaSLayout = () => {
                         fontWeight: 700,
                         ...(isActive
                           ? {
-                              bgcolor: "primary.main",
-                              color: "white",
+                              color: "primary.main",
+                              bgcolor: "rgba(15, 139, 108, 0.08)",
                               "&:hover": {
-                                bgcolor: "primary.dark",
+                                bgcolor: "rgba(15, 139, 108, 0.12)",
                               },
                             }
                           : {
                               color: "text.secondary",
                               "&:hover": {
-                                bgcolor: "rgba(15, 139, 108, 0.08)",
+                                bgcolor: "rgba(15, 139, 108, 0.06)",
                                 color: "primary.main",
                               },
                             }),
@@ -677,7 +678,6 @@ export const SaaSLayout = () => {
           },
         }}
       >
-        {/* Mobile Drawer Header */}
         <Stack
           direction="row"
           sx={{
@@ -705,7 +705,6 @@ export const SaaSLayout = () => {
           </IconButton>
         </Stack>
 
-        {/* Navigation List */}
         <Box sx={{ flexGrow: 1, py: 3, overflowY: "auto", px: 2 }}>
           <Typography
             variant="overline"
@@ -838,7 +837,6 @@ export const SaaSLayout = () => {
           </ListItem>
         </Box>
 
-        {/* Mobile Drawer Footer with User Profile */}
         <Box
           sx={{
             p: 2.5,
@@ -934,16 +932,21 @@ export const SaaSLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2.5, md: 5 },
+          display: "flex",
+          flexDirection: "column",
+          minHeight: `calc(100vh - ${TOP_BAR_HEIGHT}px)`,
           width: "100%",
           mt: `${TOP_BAR_HEIGHT}px`,
         }}
       >
-        <Fade in timeout={360}>
-          <Box>
-            <Outlet />
-          </Box>
-        </Fade>
+        <Box sx={{ flexGrow: 1, p: { xs: 2.5, md: 5 } }}>
+          <Fade in timeout={360}>
+            <Box>
+              <Outlet />
+            </Box>
+          </Fade>
+        </Box>
+        <Footer />
       </Box>
     </Box>
   );
