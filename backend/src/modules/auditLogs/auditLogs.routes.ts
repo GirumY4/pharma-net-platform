@@ -2,12 +2,14 @@
 import { Router } from "express";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/rbac.middleware.js";
+import { requireApprovedPharmacy } from "../../middlewares/approval.middleware.js";
 import { getAuditLogs } from "./auditLogs.controller.js";
 
 const router = Router();
 
 // Apply authentication to all audit log routes
 router.use(protect);
+router.use(requireApprovedPharmacy);
 
 /**
  * @route   GET /api/logs

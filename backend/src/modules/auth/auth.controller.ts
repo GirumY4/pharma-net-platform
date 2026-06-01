@@ -12,6 +12,9 @@ import {
   hashPassword,
 } from "./auth.service.js";
 
+const getPharmacyTrialEndsAt = () =>
+  new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
 /**
  * POST /api/auth/register
  * Matches exact response format and error codes from API_Documentation.md
@@ -65,6 +68,12 @@ export const register = async (
           address,
           city,
           location,
+          ...(role === "pharmacy_manager"
+            ? {
+                subscriptionStatus: "trialing",
+                subscriptionCurrentPeriodEnd: getPharmacyTrialEndsAt(),
+              }
+            : {}),
         },
       ],
       { session },
@@ -110,6 +119,9 @@ export const register = async (
         address: user.address,
         city: user.city,
         location: user.location,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd,
         isActive: user.isActive,
         createdAt: user.createdAt,
       },
@@ -174,8 +186,12 @@ export const login = async (
         user: {
           _id: user._id,
           name: user.name,
+          email: user.email,
           role: user.role,
           profilePictureUrl: user.profilePictureUrl,
+          subscriptionPlan: user.subscriptionPlan,
+          subscriptionStatus: user.subscriptionStatus,
+          subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd,
         },
       },
     });

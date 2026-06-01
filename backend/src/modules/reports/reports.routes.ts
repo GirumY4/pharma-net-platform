@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/rbac.middleware.js";
+import { requireApprovedPharmacy } from "../../middlewares/approval.middleware.js";
 import {
   getDashboardReport,
   getExpiringReport,
@@ -14,6 +15,7 @@ const router = Router();
 
 // Apply authentication to all report routes
 router.use(protect);
+router.use(requireApprovedPharmacy);
 
 /**
  * @route   GET /api/reports/dashboard

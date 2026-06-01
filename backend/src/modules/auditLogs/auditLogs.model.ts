@@ -21,7 +21,13 @@ export interface IAuditLog extends Document {
     | "PAYMENT_RECORDED"
     | "GRN"
     | "GIN";
-  resource: "User" | "Medicine" | "Order" | "Payment" | "InventoryTransaction";
+  resource:
+    | "User"
+    | "Medicine"
+    | "Order"
+    | "Payment"
+    | "InventoryTransaction"
+    | "BillingSubmission";
   resourceId: Types.ObjectId;
   before?: Record<string, unknown> | null;
   after?: Record<string, unknown> | null;
@@ -64,7 +70,14 @@ const AuditLogSchema = new Schema<IAuditLog>(
     resource: {
       type: String,
       required: true,
-      enum: ["User", "Medicine", "Order", "Payment", "InventoryTransaction"],
+      enum: [
+        "User",
+        "Medicine",
+        "Order",
+        "Payment",
+        "InventoryTransaction",
+        "BillingSubmission",
+      ],
       index: true,
     },
     resourceId: {

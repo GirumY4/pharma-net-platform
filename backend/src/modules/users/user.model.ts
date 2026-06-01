@@ -1,5 +1,18 @@
 // src/modules/users/user.model.ts
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
+
+export type SubscriptionPlan =
+  | "single_pharmacy"
+  | "professional"
+  | "enterprise_chain";
+
+export type SubscriptionStatus =
+  | "none"
+  | "trialing"
+  | "pending_review"
+  | "active"
+  | "past_due"
+  | "suspended";
 
 export interface IUser extends Document {
   name: string;
@@ -17,6 +30,10 @@ export interface IUser extends Document {
   address?: string | undefined;
   city?: string | undefined;
   location?: { lat: Number; lng: Number } | null;
+  subscriptionPlan?: SubscriptionPlan | undefined;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionCurrentPeriodEnd?: Date | undefined;
+  subscriptionLastBillingSubmissionId?: Types.ObjectId | undefined;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt?: Date | undefined;
@@ -64,6 +81,30 @@ const userSchema = new Schema<IUser>(
     address: { type: String, trim: true },
     city: { type: String, trim: true, index: true }, // Indexed for marketplace city search
     location: { type: locationSchema, default: null },
+    subscriptionPlan: {
+      type: String,
+      enum: ["single_pharmacy", "professional", "enterprise_chain"],
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: [
+        "none",
+        "trialing",
+        "pending_review",
+        "active",
+        "past_due",
+        "suspended",
+      ],
+      default: "none",
+      index: true,
+    },
+    subscriptionCurrentPeriodEnd: {
+      type: Date,
+    },
+    subscriptionLastBillingSubmissionId: {
+      type: Schema.Types.ObjectId,
+      ref: "BillingSubmission",
+    },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false, index: true }, // Performance for soft deletes
     deletedAt: { type: Date, default: null },

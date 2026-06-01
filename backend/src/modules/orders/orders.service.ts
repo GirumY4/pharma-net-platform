@@ -57,6 +57,7 @@ export const processOrderPlacement = async (
       role: "pharmacy_manager",
       isActive: true,
       isDeleted: false,
+      subscriptionStatus: "active",
     })
     .session(session);
 

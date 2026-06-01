@@ -6,12 +6,14 @@ import {
 } from "./inventoryTransaction.controller.js";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/rbac.middleware.js";
+import { requireApprovedPharmacy } from "../../middlewares/approval.middleware.js";
 
 const router = Router();
 
 // Apply authentication and RBAC to all inventory transaction routes
 router.use(protect);
 router.use(authorizeRoles(["admin", "pharmacy_manager"]));
+router.use(requireApprovedPharmacy);
 
 /**
  * @route   POST /api/inventory-transactions

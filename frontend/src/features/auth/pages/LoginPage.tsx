@@ -30,6 +30,7 @@ import SEO from "../../../components/SEO";
 import { handleApiError } from "../../../utils/errorMapper";
 import { getRoleFromToken } from "../../../utils/authToken";
 import { loginUser } from "../services/authApi";
+import { hasActivePharmacySubscription } from "../../billing/planPermissions";
 
 
 const loginBrand = {
@@ -72,7 +73,15 @@ export const LoginPage = () => {
   const location = useLocation();
   const { login } = useAuth();
 
-  const routeMessage = (location.state as { message?: string } | null)?.message;
+  const routeState = location.state as {
+    message?: string;
+    from?: { pathname?: string; search?: string };
+  } | null;
+  const routeMessage = routeState?.message;
+  const registerTarget =
+    routeState?.from?.pathname === "/billing"
+      ? `/register${routeState.from.search || ""}`
+      : "/register";
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -84,12 +93,34 @@ export const LoginPage = () => {
       login(response.token, response.user);
 
       const role = getRoleFromToken(response.token);
+      const hasActiveSubscription =
+        role === "pharmacy_manager" &&
+        hasActivePharmacySubscription(response.user);
+      if (routeState?.from?.pathname) {
+        if (
+          role === "pharmacy_manager" &&
+          routeState.from.pathname !== "/billing" &&
+          !hasActiveSubscription
+        ) {
+          navigate("/billing", { replace: true });
+          return;
+        }
+
+        navigate(
+          `${routeState.from.pathname}${routeState.from.search || ""}`,
+          { replace: true },
+        );
+        return;
+      }
+
       switch (role) {
         case "admin":
           navigate("/admin/users", { replace: true });
           break;
         case "pharmacy_manager":
-          navigate("/dashboard", { replace: true });
+          navigate(hasActiveSubscription ? "/dashboard" : "/billing", {
+            replace: true,
+          });
           break;
         case "public_user":
           navigate("/marketplace", { replace: true });
@@ -208,7 +239,7 @@ export const LoginPage = () => {
             New to Pharma-Net?{" "}
             <Button
               component={RouterLink}
-              to="/register"
+              to={registerTarget}
               variant="text"
               disabled={loading}
               sx={{ px: 0.25, color: "primary.main", fontWeight: 800 }}

@@ -24,6 +24,8 @@ import SEO from "../../../components/SEO";
 export const ReportsPage = () => {
   const { user } = useAuth();
   const isPharmacyManager = user?.role === "pharmacy_manager";
+  const canUseAdvancedAnalytics =
+    !isPharmacyManager || user?.subscriptionPlan === "professional";
 
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -112,6 +114,13 @@ export const ReportsPage = () => {
         loading={loading}
       />
 
+      {!canUseAdvancedAnalytics && (
+        <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+          Advanced analytics are available on the Professional plan. Sales
+          reporting remains available for this subscription.
+        </Alert>
+      )}
+
       {/* KPI Cards Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -154,49 +163,58 @@ export const ReportsPage = () => {
       </Grid>
 
       {/* Charts Section */}
-      <Grid container spacing={4} sx={{ mb: 4 }}>
-        {/* Revenue Trend Chart */}
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <RevenueChart
-            data={report?.revenueTrend || []}
-            loading={loading}
-            title="Daily Revenue Trend"
-          />
-        </Grid>
+      {canUseAdvancedAnalytics && (
+        <Grid container spacing={4} sx={{ mb: 4 }}>
+          {/* Revenue Trend Chart */}
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <RevenueChart
+              data={report?.revenueTrend || []}
+              loading={loading}
+              title="Daily Revenue Trend"
+            />
+          </Grid>
 
-        {/* Stock Distribution Chart */}
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <StockDistributionChart
-            data={
-              report?.stockHealth || { healthy: 0, low: 0, critical: 0, out: 0 }
-            }
-            loading={loading}
-            title="Stock Health Distribution"
-          />
+          {/* Stock Distribution Chart */}
+          <Grid size={{ xs: 12, lg: 4 }}>
+            <StockDistributionChart
+              data={
+                report?.stockHealth || {
+                  healthy: 0,
+                  low: 0,
+                  critical: 0,
+                  out: 0,
+                }
+              }
+              loading={loading}
+              title="Stock Health Distribution"
+            />
+          </Grid>
         </Grid>
-      </Grid>
+      )}
 
       {/* Top Medicines & Expiry Forecast */}
-      <Grid container spacing={4} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, lg: 6 }}>
-          <TopMedicinesChart
-            data={report?.topMedicines || []}
-            loading={loading}
-            title="Top 5 Medicines by Volume"
-          />
-        </Grid>
+      {canUseAdvancedAnalytics && (
+        <Grid container spacing={4} sx={{ mb: 4 }}>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <TopMedicinesChart
+              data={report?.topMedicines || []}
+              loading={loading}
+              title="Top 5 Medicines by Volume"
+            />
+          </Grid>
 
-        <Grid size={{ xs: 12, lg: 6 }}>
-          <ExpiryForecastTable
-            data={report?.expiringBatches || []}
-            loading={loading}
-            title="Expiring Batches (FEFO)"
-            onViewAll={() => {
-              // Navigate to detailed expiry report
-            }}
-          />
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <ExpiryForecastTable
+              data={report?.expiringBatches || []}
+              loading={loading}
+              title="Expiring Batches (FEFO)"
+              onViewAll={() => {
+                // Navigate to detailed expiry report
+              }}
+            />
+          </Grid>
         </Grid>
-      </Grid>
+      )}
 
       {/* Detailed Logs Table */}
       <DetailedLogsTable

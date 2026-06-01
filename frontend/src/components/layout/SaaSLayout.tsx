@@ -10,6 +10,7 @@ import {
   Menu as MenuIcon,
   NotificationsNone as NotificationsIcon,
   LocalShippingOutlined as OrdersIcon,
+  PaymentsOutlined as BillingIcon,
   Refresh as RefreshIcon,
   AssessmentOutlined as ReportsIcon,
   Settings as SettingsIcon,
@@ -35,13 +36,15 @@ import {
   Menu,
   MenuItem,
   Stack,
+  Tooltip,
   Toolbar,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
+import { hasActivePharmacySubscription } from "../../features/billing/planPermissions";
 import { API_BASE_URL } from "../../services/api";
 import {
   type AppNotification,
@@ -61,6 +64,15 @@ const isUnauthorizedNotificationError = (err: unknown) =>
     ("code" in err && err.code === "UNAUTHORIZED"));
 
 import { Logo } from "../Logo";
+import { Footer } from "./Footer";
+
+interface NavItem {
+  text: string;
+  icon: ReactNode;
+  path: string;
+  disabled?: boolean;
+  disabledReason?: string;
+}
 
 export const SaaSLayout = () => {
   const { user, logout } = useAuth();
@@ -141,20 +153,56 @@ export const SaaSLayout = () => {
     navigate("/login");
   };
 
-  const managerNavItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-    { text: "Inventory", icon: <InventoryIcon />, path: "/inventory" },
-    { text: "Orders", icon: <OrdersIcon />, path: "/orders" },
-    { text: "Reports", icon: <ReportsIcon />, path: "/reports" },
+  const hasActiveManagerSubscription = hasActivePharmacySubscription(user);
+  const subscriptionDisabledReason =
+    "Subscription access requires admin approval.";
+  const ordersDisabledReason =
+    "Order management is disabled until the ordering workflow is implemented.";
+
+  const managerNavItems: NavItem[] = [
+    {
+      text: "Dashboard",
+      icon: <DashboardIcon />,
+      path: "/dashboard",
+      disabled: !hasActiveManagerSubscription,
+      disabledReason: subscriptionDisabledReason,
+    },
+    { text: "Billing", icon: <BillingIcon />, path: "/billing" },
+    {
+      text: "Inventory",
+      icon: <InventoryIcon />,
+      path: "/inventory",
+      disabled: !hasActiveManagerSubscription,
+      disabledReason: subscriptionDisabledReason,
+    },
+    {
+      text: "Orders",
+      icon: <OrdersIcon />,
+      path: "/orders",
+      disabled: true,
+      disabledReason: ordersDisabledReason,
+    },
+    {
+      text: "Reports",
+      icon: <ReportsIcon />,
+      path: "/reports",
+      disabled: !hasActiveManagerSubscription,
+      disabledReason: subscriptionDisabledReason,
+    },
   ];
 
-  const adminNavItems = [
+  const adminNavItems: NavItem[] = [
     ...(user?.role === "admin"
       ? [
           {
             text: "User Management",
             icon: <AdminIcon />,
             path: "/admin/users",
+          },
+          {
+            text: "Billing Approvals",
+            icon: <BillingIcon />,
+            path: "/admin/billing",
           },
         ]
       : []),
@@ -181,10 +229,10 @@ export const SaaSLayout = () => {
         sx={{
           width: "100%",
           height: TOP_BAR_HEIGHT,
-          bgcolor: "rgba(255, 255, 255, 0.82)",
-          backdropFilter: "blur(22px)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.78)",
-          boxShadow: "0 14px 38px rgba(18, 32, 28, 0.08)",
+          bgcolor: "rgba(247, 250, 249, 0.82)",
+          backdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(23, 35, 31, 0.08)",
+          boxShadow: "none",
           color: "text.primary",
           zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
@@ -198,38 +246,46 @@ export const SaaSLayout = () => {
             sx={{ display: { xs: "none", md: "flex" }, ml: 5 }}
           >
             {navItems.map((item) => {
-              const isActive = location.pathname.startsWith(item.path);
+              const isActive =
+                !item.disabled && location.pathname.startsWith(item.path);
               return (
-                <Button
+                <Tooltip
                   key={item.text}
-                  onClick={() => navigate(item.path)}
-                  startIcon={item.icon}
-                  variant={isActive ? "contained" : "text"}
-                  disableElevation
-                  sx={{
-                    minHeight: 40,
-                    px: 2.25,
-                    borderRadius: 2,
-                    fontWeight: 700,
-                    ...(isActive
-                      ? {
-                          bgcolor: "primary.main",
-                          color: "white",
-                          "&:hover": {
-                            bgcolor: "primary.dark",
-                          },
-                        }
-                      : {
-                          color: "text.secondary",
-                          "&:hover": {
-                            bgcolor: "rgba(15, 139, 108, 0.08)",
-                            color: "primary.main",
-                          },
-                        }),
-                  }}
+                  title={item.disabled ? item.disabledReason || "" : ""}
                 >
-                  {item.text}
-                </Button>
+                  <span>
+                    <Button
+                      onClick={() => navigate(item.path)}
+                      startIcon={item.icon}
+                      variant="text"
+                      disableElevation
+                      disabled={item.disabled}
+                      sx={{
+                        minHeight: 40,
+                        px: 2.25,
+                        borderRadius: 2,
+                        fontWeight: 700,
+                        ...(isActive
+                          ? {
+                              color: "primary.main",
+                              bgcolor: "rgba(15, 139, 108, 0.08)",
+                              "&:hover": {
+                                bgcolor: "rgba(15, 139, 108, 0.12)",
+                              },
+                            }
+                          : {
+                              color: "text.secondary",
+                              "&:hover": {
+                                bgcolor: "rgba(15, 139, 108, 0.06)",
+                                color: "primary.main",
+                              },
+                            }),
+                      }}
+                    >
+                      {item.text}
+                    </Button>
+                  </span>
+                </Tooltip>
               );
             })}
           </Stack>
@@ -622,7 +678,6 @@ export const SaaSLayout = () => {
           },
         }}
       >
-        {/* Mobile Drawer Header */}
         <Stack
           direction="row"
           sx={{
@@ -650,7 +705,6 @@ export const SaaSLayout = () => {
           </IconButton>
         </Stack>
 
-        {/* Navigation List */}
         <Box sx={{ flexGrow: 1, py: 3, overflowY: "auto", px: 2 }}>
           <Typography
             variant="overline"
@@ -667,14 +721,17 @@ export const SaaSLayout = () => {
           </Typography>
           <List disablePadding>
             {navItems.map((item) => {
-              const isActive = location.pathname.startsWith(item.path);
+              const isActive =
+                !item.disabled && location.pathname.startsWith(item.path);
               return (
                 <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
                   <ListItemButton
                     onClick={() => {
+                      if (item.disabled) return;
                       navigate(item.path);
                       setMobileNavOpen(false);
                     }}
+                    disabled={item.disabled}
                     sx={{
                       borderRadius: 2,
                       py: 1.5,
@@ -700,6 +757,7 @@ export const SaaSLayout = () => {
                           }
                         : {},
                       transition: "all 0.2s ease",
+                      opacity: item.disabled ? 0.44 : 1,
                       "&:hover": {
                         bgcolor: "rgba(255,255,255,0.06)",
                         color: "white",
@@ -779,7 +837,6 @@ export const SaaSLayout = () => {
           </ListItem>
         </Box>
 
-        {/* Mobile Drawer Footer with User Profile */}
         <Box
           sx={{
             p: 2.5,
@@ -875,16 +932,21 @@ export const SaaSLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2.5, md: 5 },
+          display: "flex",
+          flexDirection: "column",
+          minHeight: `calc(100vh - ${TOP_BAR_HEIGHT}px)`,
           width: "100%",
           mt: `${TOP_BAR_HEIGHT}px`,
         }}
       >
-        <Fade in timeout={360}>
-          <Box>
-            <Outlet />
-          </Box>
-        </Fade>
+        <Box sx={{ flexGrow: 1, p: { xs: 2.5, md: 5 } }}>
+          <Fade in timeout={360}>
+            <Box>
+              <Outlet />
+            </Box>
+          </Fade>
+        </Box>
+        <Footer />
       </Box>
     </Box>
   );

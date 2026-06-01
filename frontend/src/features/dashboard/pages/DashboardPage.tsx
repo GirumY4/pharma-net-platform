@@ -16,6 +16,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Divider,
   Fab,
   Grid,
   ListItemIcon,
@@ -56,6 +57,8 @@ const getDefaultDateRange = () => {
   start.setDate(end.getDate() - 6);
   return { startDate: toInputDate(start), endDate: toInputDate(end) };
 };
+
+const ORDER_SYSTEM_ENABLED = false;
 
 const formatCurrency = (value: number) =>
   `ETB ${Math.round(value).toLocaleString()}`;
@@ -256,6 +259,8 @@ export const DashboardPage = () => {
         </Tooltip>
       </Box>
 
+      <Divider sx={{ mb: 4, borderColor: "rgba(15, 139, 108, 0.16)" }} />
+
       {/* ─────────────── Date-range filter ───────────── */}
       <Box
         sx={{
@@ -408,7 +413,7 @@ export const DashboardPage = () => {
             actionError={actionError}
             actionLoadingId={actionLoadingId}
             onRefresh={refresh}
-            onApproveOrder={approveOrder}
+            onApproveOrder={ORDER_SYSTEM_ENABLED ? approveOrder : undefined}
           />
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>
@@ -502,9 +507,11 @@ export const DashboardPage = () => {
             </MenuItem>
             <MenuItem
               onClick={() => {
+                if (!ORDER_SYSTEM_ENABLED) return;
                 setQuickActionAnchor(null);
                 navigate("/orders?status=pending");
               }}
+              disabled={!ORDER_SYSTEM_ENABLED}
               sx={{ py: 1.5 }}
             >
               <ListItemIcon>

@@ -10,6 +10,9 @@ import { logAction } from "../../utils/auditLogger.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import User from "./user.model.js";
 
+const getPharmacyTrialEndsAt = () =>
+  new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
 // ─── Type for query filters (improves type safety) ─────────────────────────
 interface UserFilter {
   isDeleted?: boolean;
@@ -184,6 +187,62 @@ const buildAccountActionEmail = ({
 </html>`;
 };
 
+const buildProfileUpdateEmail = ({
+  name,
+  changedFields,
+}: {
+  name: string;
+  changedFields: string[];
+}) => {
+  const safeName = escapeHtml(name);
+  const safeFields = changedFields
+    .map((field) => `<li style="margin:6px 0;">${escapeHtml(field)}</li>`)
+    .join("");
+
+  return `
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile updated</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#F8FAFC; font-family:Arial, sans-serif; color:#17231F;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F8FAFC; padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px; background-color:#FFFFFF; border-radius:18px; overflow:hidden; border:1px solid #E5E7EB; box-shadow:0 20px 45px rgba(23, 35, 31, 0.10);">
+            <tr>
+              <td style="background-color:#0F5E4D; padding:30px 34px;">
+                <div style="color:#FFFFFF; font-size:26px; line-height:1.2; font-weight:800;">Pharma-Net</div>
+                <div style="margin-top:6px; color:rgba(255,255,255,0.76); font-size:14px; line-height:1.6;">Account notification</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px;">
+                <p style="margin:0 0 12px; color:#0F5E4D; font-size:13px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;">Profile settings</p>
+                <h1 style="margin:0 0 18px; color:#17231F; font-size:28px; line-height:1.2; font-weight:800;">Your profile was updated</h1>
+                <p style="margin:0 0 16px; color:#334155; font-size:16px; line-height:1.7;">Hello ${safeName},</p>
+                <p style="margin:0 0 16px; color:#334155; font-size:16px; line-height:1.7;">The following account details were changed:</p>
+                <ul style="margin:0 0 20px 18px; padding:0; color:#334155; font-size:15px; line-height:1.7;">${safeFields}</ul>
+                <div style="background-color:#FFFBEB; border-left:4px solid #DDAA4A; border-radius:12px; padding:16px 18px;">
+                  <p style="margin:0; color:#8A5F16; font-size:14px; line-height:1.7;">If you did not make this change, contact your system administrator immediately.</p>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color:#F8FAFC; padding:22px 34px; border-top:1px solid #E5E7EB;">
+                <p style="margin:0; color:#64748B; font-size:12px; line-height:1.7;">This is an automated message from Pharma-Net. Please do not reply directly to this email.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+};
+
 // @desc    Get logged in user profile
 // @route   GET /api/users/me
 // @access  Private (All Roles)
@@ -243,12 +302,31 @@ export const updateMe = async (
     }
 
     const oldData = sanitizeUser(user);
+    const changedFields: string[] = [];
 
-    if (name) user.name = name;
-    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
-    if (address !== undefined) user.address = address;
-    if (city !== undefined) user.city = city;
-    if (location !== undefined) user.location = location;
+    if (name !== undefined && name !== user.name) {
+      user.name = name;
+      changedFields.push("Full name");
+    }
+    if (phoneNumber !== undefined && phoneNumber !== user.phoneNumber) {
+      user.phoneNumber = phoneNumber;
+      changedFields.push("Phone number");
+    }
+    if (address !== undefined && address !== user.address) {
+      user.address = address;
+      changedFields.push("Street address");
+    }
+    if (city !== undefined && city !== user.city) {
+      user.city = city;
+      changedFields.push("City");
+    }
+    if (
+      location !== undefined &&
+      JSON.stringify(location ?? null) !== JSON.stringify(user.location ?? null)
+    ) {
+      user.location = location;
+      changedFields.push("Map location");
+    }
 
     await user.save();
 
@@ -265,8 +343,29 @@ export const updateMe = async (
       "-passwordHash -isDeleted -deletedAt",
     );
 
+    let profileEmailSent = false;
+    if (changedFields.length > 0) {
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: "Your Pharma-Net profile was updated",
+          message: `Hello ${user.name},\n\nYour Pharma-Net profile was updated. Changed fields: ${changedFields.join(", ")}.\n\nIf you did not make this change, contact your system administrator immediately.`,
+          html: buildProfileUpdateEmail({
+            name: user.name,
+            changedFields,
+          }),
+        });
+        profileEmailSent = true;
+      } catch (err) {
+        console.warn("Could not send profile update confirmation email", err);
+      }
+    }
+
     res.status(200).json({
       success: true,
+      message: profileEmailSent
+        ? "Profile updated successfully. Confirmation email sent."
+        : "Profile updated successfully.",
       data: updatedUser,
     });
   } catch (error) {
@@ -862,7 +961,19 @@ export const updateUser = async (
 
     // Update fields if provided
     if (name !== undefined) user.name = name;
-    if (role !== undefined) user.role = role;
+    if (role !== undefined) {
+      user.role = role;
+      if (role === "pharmacy_manager" && user.subscriptionStatus === "none") {
+        user.subscriptionStatus = "trialing";
+        user.subscriptionCurrentPeriodEnd = getPharmacyTrialEndsAt();
+      }
+      if (role !== "pharmacy_manager") {
+        user.subscriptionStatus = "none";
+        user.subscriptionPlan = undefined;
+        user.subscriptionCurrentPeriodEnd = undefined;
+        user.subscriptionLastBillingSubmissionId = undefined;
+      }
+    }
     if (isActive !== undefined) user.isActive = isActive;
 
     await user.save();

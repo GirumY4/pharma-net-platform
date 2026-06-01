@@ -1,6 +1,7 @@
 // src/modules/inventory/inventory.service.ts
 import mongoose, { type ClientSession } from "mongoose";
 import Medicine, { type IBatch, type IMedicine } from "./medicine.model.js";
+import User from "../users/user.model.js";
 import InventoryTransaction, {
   type IInventoryTransaction,
 } from "./inventoryTransaction.model.js";
@@ -119,6 +120,18 @@ export const processStockAdjustment = async (
       error.statusCode = 404;
       error.code = "BATCH_NOT_FOUND";
       throw error;
+    }
+    const pharmacy = await User.findById(userContext.pharmacyId).session(session);
+    if (pharmacy && pharmacy.subscriptionPlan === "single_pharmacy") {
+      const activeBatches = medicine.batches.filter((b) => b.quantity > 0).length;
+      if (activeBatches >= 1) {
+        const error = new Error(
+          "PLAN_LIMIT_EXCEEDED: Single Pharmacy plan is limited to a single batch per item. Please upgrade to Professional for FEFO batch management.",
+        ) as any;
+        error.statusCode = 403;
+        error.code = "PLAN_LIMIT_EXCEEDED";
+        throw error;
+      }
     }
     if (!expiryDate) {
       throw createValidationError(

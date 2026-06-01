@@ -2,6 +2,7 @@
 import type { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import Medicine from "./medicine.model.js";
+import User from "../users/user.model.js";
 import { logAction } from "../../utils/auditLogger.js";
 
 /**
@@ -47,6 +48,24 @@ export const createMedicine = async (
       reorderThreshold = 50,
       initialBatch,
     } = req.body;
+
+    const pharmacy = await User.findById(pharmacyId).session(session);
+    if (!pharmacy) {
+      const err: any = new Error("PHARMACY_NOT_FOUND: Pharmacy tenant not found.");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (pharmacy.subscriptionPlan === "single_pharmacy") {
+      const count = await Medicine.countDocuments({ pharmacyId, isDeleted: false }).session(session);
+      if (count >= 5000) {
+        const err: any = new Error(
+          "PLAN_LIMIT_EXCEEDED: Single Pharmacy plan is limited to 5,000 SKUs. Please upgrade to Professional.",
+        );
+        err.statusCode = 403;
+        throw err;
+      }
+    }
 
     // SKU uniqueness per pharmacy
     const existing = await Medicine.findOne({ sku, pharmacyId }).session(
@@ -500,6 +519,7 @@ const buildMarketplacePipeline = (
         "pharmacy.role": "pharmacy_manager",
         "pharmacy.isActive": true,
         "pharmacy.isDeleted": false,
+        "pharmacy.subscriptionStatus": "active",
       },
     },
   ];

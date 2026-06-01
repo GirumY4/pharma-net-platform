@@ -13,6 +13,7 @@ import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 // Import routes
 import auditRoutes from "./modules/auditLogs/auditLogs.routes.js";
 import authRoutes from "./modules/auth/auth.routes.js";
+import billingRoutes from "./modules/billing/billing.routes.js";
 import inventoryTransactionRoutes from "./modules/inventory/inventoryTransaction.routes.js";
 import medicineRoutes from "./modules/inventory/medicine.routes.js";
 import orderRoutes from "./modules/orders/orders.routes.js";
@@ -20,6 +21,7 @@ import paymentRoutes from "./modules/payments/payments.routes.js";
 import reportRoutes from "./modules/reports/reports.routes.js";
 import userRoutes from "./modules/users/users.routes.js";
 import notificationRoutes from "./modules/notifications/notifications.routes.js";
+import supportRoutes from "./modules/support/support.routes.js";
 
 const app: Express = express();
 
@@ -81,6 +83,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/billing", billingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/inventory-transactions", inventoryTransactionRoutes);
@@ -89,6 +92,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/logs", auditRoutes); // admin only
+app.use("/api/support", supportRoutes);
 
 // ─── Error handling ────────────────────────────────────────────────────
 app.use(notFoundHandler); // 404 handler

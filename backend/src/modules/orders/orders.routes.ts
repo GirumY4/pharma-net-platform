@@ -1,7 +1,9 @@
 // src/modules/orders/orders.routes.ts
 import { Router } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/rbac.middleware.js";
+import { requireApprovedPharmacy } from "../../middlewares/approval.middleware.js";
 import {
   createOrder,
   getOrderById,
@@ -10,9 +12,31 @@ import {
 } from "./orders.controller.js";
 
 const router = Router();
+const ORDER_SYSTEM_ENABLED = false;
+
+const requireOrdersEnabled = (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (ORDER_SYSTEM_ENABLED) {
+    return next();
+  }
+
+  return res.status(503).json({
+    success: false,
+    error: {
+      code: "FEATURE_DISABLED",
+      message:
+        "Order management and tracking are temporarily disabled.",
+    },
+  });
+};
 
 // Apply authentication to all order routes
 router.use(protect);
+router.use(requireOrdersEnabled);
+router.use(requireApprovedPharmacy);
 
 /**
  * @route   GET /api/orders

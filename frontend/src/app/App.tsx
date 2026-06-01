@@ -1,15 +1,13 @@
 import {
   Box,
   Button,
-  CircularProgress,
   Stack,
   Typography,
 } from "@mui/material";
 import type { ReactNode } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import { SaaSLayout } from "../components/layout/SaaSLayout";
-import { useAuth } from "../contexts/useAuth";
 import { UserManagementPage } from "../features/admin/pages/UserManagementPage";
 import { ConfirmDeactivationPage } from "../features/auth/pages/ConfirmDeactivationPage";
 import { ConfirmReactivationPage } from "../features/auth/pages/ConfirmReactivationPage";
@@ -17,14 +15,17 @@ import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
+import { AdminBillingPage, BillingPage } from "../features/billing";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
 import { InventoryPage } from "../features/inventory";
 import { MarketplacePage } from "../features/marketplace";
-import { OrdersPage } from "../features/orders";
 import { ReportsPage } from "../features/reports/pages/ReportsPage";
 import { ProfileSettingsPage } from "../features/users";
 import { ProtectedRoute } from "../routes/ProtectedRoute";
 import { RoleRoute } from "../routes/RoleRoute";
+import { SubscriptionRoute } from "../routes/SubscriptionRoute";
+import { LandingPage } from "../features/landing-page";
+import { LegalPage } from "../features/legal/LegalPage";
 
 const CenteredPage = ({ children }: { children: ReactNode }) => (
   <Box
@@ -40,32 +41,6 @@ const CenteredPage = ({ children }: { children: ReactNode }) => (
   </Box>
 );
 
-const HomeRedirect = () => {
-  const { isAuthenticated, isLoading, role } = useAuth();
-
-  if (isLoading) {
-    return (
-      <CenteredPage>
-        <CircularProgress />
-      </CenteredPage>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/marketplace" replace />;
-  }
-
-  if (role === "admin") {
-    return <Navigate to="/admin/users" replace />;
-  }
-
-  if (role === "pharmacy_manager") {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <Navigate to="/marketplace" replace />;
-};
-
 const Unauthorized = () => (
   <CenteredPage>
     <Typography variant="h5" color="error" sx={{ fontWeight: 800 }}>
@@ -77,6 +52,20 @@ const Unauthorized = () => (
   </CenteredPage>
 );
 
+const FeatureUnavailable = () => (
+  <CenteredPage>
+    <Typography variant="h5" sx={{ fontWeight: 800, color: "#0F5E4D" }}>
+      Feature unavailable
+    </Typography>
+    <Typography variant="body1" color="text.secondary" sx={{ mt: 1.5 }}>
+      Order management is disabled for now while the workflow is being prepared.
+    </Typography>
+    <Button href="/dashboard" variant="contained" sx={{ mt: 3 }}>
+      Back to dashboard
+    </Button>
+  </CenteredPage>
+);
+
 const NotFound = () => (
   <CenteredPage>
     <Typography variant="h5" sx={{ fontWeight: 800, color: "#0F5E4D" }}>
@@ -85,7 +74,11 @@ const NotFound = () => (
     <Typography variant="body1" color="text.secondary" sx={{ mt: 1.5 }}>
       The page you are looking for does not exist.
     </Typography>
-    <Stack direction="row" spacing={1.5} sx={{ justifyContent: "center", mt: 3 }}>
+    <Stack
+      direction="row"
+      spacing={1.5}
+      sx={{ justifyContent: "center", mt: 3 }}
+    >
       <Button href="/marketplace" variant="contained">
         Marketplace
       </Button>
@@ -98,7 +91,7 @@ const NotFound = () => (
 
 export const App = () => (
   <Routes>
-    <Route path="/" element={<HomeRedirect />} />
+    <Route path="/" element={<LandingPage />} />
 
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
@@ -113,6 +106,12 @@ export const App = () => (
       element={<ConfirmReactivationPage />}
     />
     <Route path="/marketplace" element={<MarketplacePage />} />
+    <Route path="/privacy-policy" element={<LegalPage kind="privacy" />} />
+    <Route path="/terms-of-service" element={<LegalPage kind="terms" />} />
+    <Route
+      path="/auditing-compliance"
+      element={<LegalPage kind="compliance" />}
+    />
     <Route path="/unauthorized" element={<Unauthorized />} />
 
     <Route element={<ProtectedRoute />}>
@@ -122,16 +121,20 @@ export const App = () => (
 
       <Route element={<RoleRoute allowedRoles={["pharmacy_manager"]} />}>
         <Route element={<SaaSLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/inventory" element={<InventoryPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/billing" element={<BillingPage />} />
+          <Route element={<SubscriptionRoute />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/orders" element={<FeatureUnavailable />} />
+            <Route path="/reports" element={<ReportsPage />} />
+          </Route>
         </Route>
       </Route>
 
       <Route element={<RoleRoute allowedRoles={["admin"]} />}>
         <Route element={<SaaSLayout />}>
           <Route path="/admin/users" element={<UserManagementPage />} />
+          <Route path="/admin/billing" element={<AdminBillingPage />} />
         </Route>
       </Route>
     </Route>

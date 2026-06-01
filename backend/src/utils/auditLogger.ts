@@ -117,6 +117,16 @@ const derivePharmacyIdForResource = async (
           .session(session ?? null);
         return doc?.pharmacyId ?? null;
       }
+      case "BillingSubmission": {
+        const BillingSubmission = await import(
+          "../modules/billing/billing.model.js"
+        );
+        const doc = await BillingSubmission.default
+          .findById(id)
+          .select("pharmacyId")
+          .session(session ?? null);
+        return doc?.pharmacyId ?? null;
+      }
       case "User": {
         // For User resource, pharmacyId is only meaningful if the user is a pharmacy_manager
         // In that case, the user's _id IS the pharmacyId

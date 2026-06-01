@@ -11,17 +11,16 @@ import {
   Typography,
 } from "@mui/material";
 import type { MarketplaceMedicine } from "../types";
-import { SEO } from "../../../components/SEO";
 
 interface MedicineCardProps {
-   medicine: MarketplaceMedicine;
-   index: number;
-   onViewDetails: (medicine: MarketplaceMedicine) => void;
-   onGetDirections: (
-     pharmacy: MarketplaceMedicine["pharmacyLocation"] | undefined,
-     pharmacyName: string,
-   ) => void;
- }
+  medicine: MarketplaceMedicine;
+  index: number;
+  onViewDetails: (medicine: MarketplaceMedicine) => void;
+  onGetDirections: (
+    location: { lat: number; lng: number } | undefined,
+    pharmacyName: string,
+  ) => void;
+}
 
 export const MedicineCard = ({
   medicine,
@@ -32,161 +31,144 @@ export const MedicineCard = ({
   const isAvailable = medicine.totalStock > 0;
   const isLowStock = medicine.totalStock > 0 && medicine.totalStock < 50;
 
-  const medicineSchema = {
-  "@context": "https://schema.org",
-  "@type": "Product",
-  "name": medicine.name,
-  "sku": medicine.sku,
-  "category": medicine.category,
-  "offers": {
-    "@type": "Offer",
-    "price": medicine.unitPrice,
-    "priceCurrency": "ETB",
-    "availability": medicine.totalStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-    "seller": {
-      "@type": "Pharmacy",
-      "name": medicine.pharmacyName
-    }
-  }
-};
-
   return (
-    <>
-    <SEO
-  title={`${medicine.name} - ${medicine.pharmacyName}`}
-  description={`${medicine.name} available at ${medicine.pharmacyName} for ETB ${medicine.unitPrice}. ${medicine.totalStock} in stock.`}
-  structuredData={medicineSchema}
-/>
     <Fade in timeout={300 + index * 50}>
       <Paper
         elevation={0}
         sx={{
           p: 2.5,
           borderRadius: 4,
-          border: "1px solid rgba(0,0,0,0.06)",
-          bgcolor: "rgba(255, 255, 255, 0.7)",
+          border: "1px solid rgba(23, 35, 31, 0.08)",
+          bgcolor: "rgba(255, 255, 255, 0.8)",
           backdropFilter: "blur(24px)",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
-          transition: "transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease, border-color 200ms ease",
+          boxShadow: "0 4px 18px rgba(18, 32, 28, 0.02)",
+          transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
           cursor: "pointer",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "space-between",
           "&:hover": {
-            transform: "translateY(-6px)",
-            boxShadow: "0 20px 60px rgba(15, 139, 108, 0.15)",
-            borderColor: "rgba(15, 139, 108, 0.4)",
+            transform: "translateY(-4px)",
+            boxShadow: "0 12px 32px rgba(15, 139, 108, 0.12)",
+            borderColor: "rgba(15, 139, 108, 0.3)",
           },
         }}
         onClick={() => onViewDetails(medicine)}
       >
-        {/* Header: Name + Category */}
-        <Box sx={{ mb: 2 }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 700, color: "#1E293B", mb: 0.5 }}
-          >
-            {medicine.name}
-          </Typography>
-          {medicine.genericName && (
+        <Box>
+          {/* Header: Name + Category */}
+          <Box sx={{ mb: 1.5 }}>
             <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block" }}
+              variant="subtitle1"
+              sx={{ fontWeight: 800, color: "#17231F", mb: 0.5 }}
             >
-              {medicine.genericName}
+              {medicine.name}
             </Typography>
-          )}
-          <Chip
-            label={medicine.category}
-            size="small"
-            sx={{
-              mt: 1,
-              bgcolor: "rgba(15, 139, 108, 0.08)",
-              color: "#0F8B6C",
-              fontWeight: 600,
-              fontSize: "0.7rem",
-            }}
-          />
-        </Box>
+            {medicine.genericName && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", fontStyle: "italic", mb: 1 }}
+              >
+                {medicine.genericName}
+              </Typography>
+            )}
+            <Chip
+              label={medicine.category}
+              size="small"
+              sx={{
+                bgcolor: "rgba(15, 139, 108, 0.06)",
+                color: "#0F8B6C",
+                fontWeight: 700,
+                fontSize: "0.68rem",
+                height: 20,
+              }}
+            />
+          </Box>
 
-        {/* Price + Availability */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Typography variant="h6" color="#0F5E4D" sx={{ fontWeight: 800 }}>
-            ETB {medicine.unitPrice.toFixed(2)}
-            <Typography
-              component="span"
-              variant="caption"
-              color="text.secondary"
-              sx={{ ml: 0.5, fontWeight: 500 }}
-            >
-              / {medicine.unitOfMeasure}
-            </Typography>
-          </Typography>
-          <Chip
-            label={
-              isAvailable
-                ? isLowStock
-                  ? `Low Stock (${medicine.totalStock})`
-                  : `In Stock (${medicine.totalStock})`
-                : "Out of Stock"
-            }
-            size="small"
+          {/* Price + Availability */}
+          <Box
             sx={{
-              bgcolor: isAvailable
-                ? isLowStock
-                  ? "rgba(217, 119, 6, 0.12)"
-                  : "rgba(5, 150, 105, 0.12)"
-                : "rgba(107, 114, 128, 0.12)",
-              color: isAvailable
-                ? isLowStock
-                  ? "#D97706"
-                  : "#059669"
-                : "#6B7280",
-              fontWeight: 700,
-              fontSize: "0.7rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
             }}
-          />
-        </Box>
-
-        {/* Pharmacy Info */}
-        <Box sx={{ mb: 2 }}>
-          <Stack
-             direction="row"
-             spacing={1}
-             sx={{ alignItems: "center", mb: 0.5 }}
-           >
-            <LocalPharmacy fontSize="small" sx={{ color: "#DDAA4A" }} />
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {medicine.pharmacyName}
-            </Typography>
-          </Stack>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mb: 0.5 }}
           >
-            {medicine.pharmacyCity}
-          </Typography>
-          {medicine.distanceKm !== undefined && (
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-              <LocationOn
-                fontSize="small"
-                sx={{ color: "primary.main", fontSize: "1rem" }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                {medicine.distanceKm.toFixed(1)} km away
+            <Typography variant="h6" color="#0F5E4D" sx={{ fontWeight: 850 }}>
+              ETB {medicine.unitPrice.toFixed(2)}
+              <Typography
+                component="span"
+                variant="caption"
+                color="text.secondary"
+                sx={{ ml: 0.5, fontWeight: 600 }}
+              >
+                / {medicine.unitOfMeasure}
+              </Typography>
+            </Typography>
+            <Chip
+              label={
+                isAvailable
+                  ? isLowStock
+                    ? `Low Stock (${medicine.totalStock})`
+                    : `In Stock`
+                  : "Out of Stock"
+              }
+              size="small"
+              sx={{
+                bgcolor: isAvailable
+                  ? isLowStock
+                    ? "rgba(217, 119, 6, 0.1)"
+                    : "rgba(15, 139, 108, 0.1)"
+                  : "rgba(194, 65, 59, 0.1)",
+                color: isAvailable
+                  ? isLowStock
+                    ? "#D97706"
+                    : "#0F8B6C"
+                  : "#C2413B",
+                fontWeight: 800,
+                fontSize: "0.68rem",
+                height: 22,
+              }}
+            />
+          </Box>
+
+          {/* Pharmacy Info */}
+          <Box sx={{ mb: 2.5, p: 1.5, borderRadius: 2, bgcolor: "rgba(23, 35, 31, 0.03)" }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: "center", mb: 0.5 }}
+            >
+              <LocalPharmacy fontSize="small" sx={{ color: "#DDAA4A", fontSize: "1.1rem" }} />
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "#17231F" }}>
+                {medicine.pharmacyName}
               </Typography>
             </Stack>
-          )}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 0.5, pl: 2.5 }}
+            >
+              {medicine.pharmacyCity}
+            </Typography>
+            {medicine.distanceKm !== undefined && (
+              <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", pl: 2.5 }}>
+                <LocationOn
+                  fontSize="small"
+                  sx={{ color: "primary.main", fontSize: "0.9rem" }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {medicine.distanceKm.toFixed(1)} km away
+                </Typography>
+              </Stack>
+            )}
+          </Box>
         </Box>
 
         {/* Actions */}
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ mt: "auto" }}>
           <Button
             size="small"
             variant="outlined"
@@ -197,16 +179,18 @@ export const MedicineCard = ({
             endIcon={<NavigateNext fontSize="small" />}
             sx={{
               flexGrow: 1,
-              borderColor: "rgba(15, 139, 108, 0.5)",
+              borderColor: "rgba(15, 139, 108, 0.3)",
               color: "#0F8B6C",
-              fontWeight: 600,
+              fontWeight: 700,
+              fontSize: "0.8rem",
+              minHeight: 38,
               "&:hover": {
                 borderColor: "#0F8B6C",
                 bgcolor: "rgba(15, 139, 108, 0.04)",
               },
             }}
           >
-            View Details
+            Details
           </Button>
           {medicine.pharmacyLocation && (
             <Tooltip title={`Get directions to ${medicine.pharmacyName}`}>
@@ -222,7 +206,8 @@ export const MedicineCard = ({
                 }}
                 sx={{
                   minWidth: "auto",
-                  px: 2,
+                  px: 1.75,
+                  minHeight: 38,
                   background:
                     "linear-gradient(135deg, #0F8B6C 0%, #0A6B59 100%)",
                   "&:hover": {
@@ -238,6 +223,5 @@ export const MedicineCard = ({
         </Stack>
       </Paper>
     </Fade>
-    </>
   );
 };
