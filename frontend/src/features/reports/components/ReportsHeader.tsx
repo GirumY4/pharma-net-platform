@@ -3,6 +3,7 @@ import { CalendarToday, Download, FilterList } from "@mui/icons-material";
 import {
   Box,
   Button,
+  Divider,
   IconButton,
   Menu,
   MenuItem,
@@ -157,6 +158,8 @@ export const ReportsHeader = ({
           </Menu>
         </Box>
       </Box>
+
+      <Divider sx={{ mb: 3, borderColor: "rgba(15, 139, 108, 0.16)" }} />
 
       {/* Date Range Controls */}
       <Box

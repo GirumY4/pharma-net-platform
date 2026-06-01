@@ -16,6 +16,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Divider,
   Fab,
   Grid,
   ListItemIcon,
@@ -257,6 +258,8 @@ export const DashboardPage = () => {
           </span>
         </Tooltip>
       </Box>
+
+      <Divider sx={{ mb: 4, borderColor: "rgba(15, 139, 108, 0.16)" }} />
 
       {/* ─────────────── Date-range filter ───────────── */}
       <Box

@@ -1,5 +1,5 @@
 // src/features/users/pages/ProfileSettingsPage.tsx
-import { Alert, Box, Grid, Snackbar, Stack, Typography } from "@mui/material";
+import { Alert, Box, Divider, Grid, Snackbar, Stack, Typography } from "@mui/material";
 import { useState } from "react";
 import { useAuth } from "../../../contexts/useAuth";
 import { AccountSettingsCard } from "../components/AccountSettingsCard";
@@ -84,6 +84,8 @@ export const ProfileSettingsPage = () => {
           </Typography>
         </Stack>
       </Box>
+
+      <Divider sx={{ mb: 4, borderColor: "rgba(15, 139, 108, 0.16)" }} />
 
       <ProfileHeader profile={profile} sx={{ mb: 4 }} />
 

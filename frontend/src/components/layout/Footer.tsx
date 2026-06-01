@@ -1,10 +1,11 @@
 // src/components/layout/Footer.tsx
 import {
   Facebook as FacebookIcon,
+  Instagram as InstagramIcon,
+  Language as WebsiteIcon,
   LinkedIn as LinkedInIcon,
-  Send as SendIcon,
+  MusicNote as TikTokIcon,
   Telegram as TelegramIcon,
-  Twitter as TwitterIcon,
   VerifiedUser as VerifiedIcon,
 } from "@mui/icons-material";
 import {
@@ -14,27 +15,79 @@ import {
   Divider,
   Grid,
   IconButton,
-  InputAdornment,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "../Logo";
 
+const ALYAH_LINKS = [
+  {
+    icon: <LinkedInIcon />,
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/company/alyah-software",
+  },
+  {
+    icon: <TelegramIcon />,
+    label: "Telegram",
+    href: "https://t.me/alyahsoftware2",
+  },
+  {
+    icon: <FacebookIcon />,
+    label: "Facebook",
+    href: "https://www.facebook.com/profile.php?id=100065420744158",
+  },
+  {
+    icon: <WebsiteIcon />,
+    label: "Website",
+    href: "http://alyahsoftware.com/",
+  },
+];
+
+const PARENT_SOCIAL_LINKS = [
+  {
+    icon: <TikTokIcon />,
+    text: "TikTok",
+    href: "https://www.tiktok.com/@alyah_group?_r=1&_t=ZS-95dSQrUMOuL",
+  },
+  {
+    icon: <InstagramIcon />,
+    text: "Instagram",
+    href: "https://www.instagram.com/alyah_software?igsh=MXJveTNtbXR3c2h2YQ==",
+  },
+  {
+    icon: <LinkedInIcon />,
+    text: "LinkedIn",
+    href: "https://www.linkedin.com/company/alyah-software/",
+  },
+  {
+    icon: <FacebookIcon />,
+    text: "Facebook",
+    href: "https://www.facebook.com/profile.php?id=100065420744158",
+  },
+  {
+    icon: <WebsiteIcon />,
+    text: "Website",
+    href: "http://alyahsoftware.com/",
+  },
+];
+
 export const Footer = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      setSubscribed(true);
-      setEmail("");
-      setTimeout(() => setSubscribed(false), 5000);
-    }
+  const linkButtonSx = {
+    color: "rgba(255, 255, 255, 0.55)",
+    p: 0,
+    minHeight: 0,
+    fontWeight: 500,
+    fontSize: "0.9rem",
+    textTransform: "none",
+    transition: "color 0.2s ease",
+    "&:hover": {
+      color: "#DDAA4A",
+      bgcolor: "transparent",
+      transform: "translateX(4px)",
+    },
   };
 
   return (
@@ -50,7 +103,6 @@ export const Footer = () => {
     >
       <Container maxWidth="xl">
         <Grid container spacing={{ xs: 5, md: 8 }}>
-          {/* Brand Column */}
           <Grid size={{ xs: 12, md: 4 }}>
             <Stack spacing={3} sx={{ alignItems: "flex-start" }}>
               <Logo onDark />
@@ -60,21 +112,22 @@ export const Footer = () => {
                   color: "rgba(255, 255, 255, 0.55)",
                   lineHeight: 1.7,
                   fontSize: "0.925rem",
-                  maxWidth: 320,
+                  maxWidth: 340,
                 }}
               >
-                Ethiopia's leading multi-tenant B2B pharmaceutical inventory, batch tracking, and compliance management platform.
+                Multi-tenant pharmaceutical inventory, batch tracking,
+                marketplace discovery, and audit-ready operations for Ethiopian
+                healthcare teams.
               </Typography>
               <Stack direction="row" spacing={1.5}>
-                {[
-                  { icon: <LinkedInIcon />, label: "LinkedIn" },
-                  { icon: <TwitterIcon />, label: "Twitter" },
-                  { icon: <TelegramIcon />, label: "Telegram" },
-                  { icon: <FacebookIcon />, label: "Facebook" },
-                ].map((social) => (
+                {ALYAH_LINKS.map((social) => (
                   <IconButton
                     key={social.label}
                     aria-label={social.label}
+                    component="a"
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     size="small"
                     sx={{
                       color: "rgba(255, 255, 255, 0.5)",
@@ -96,7 +149,6 @@ export const Footer = () => {
             </Stack>
           </Grid>
 
-          {/* Quick Links Column */}
           <Grid size={{ xs: 6, sm: 4, md: 2.5 }}>
             <Typography
               variant="subtitle2"
@@ -120,19 +172,7 @@ export const Footer = () => {
                 <Button
                   key={link.text}
                   onClick={() => navigate(link.path)}
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.55)",
-                    p: 0,
-                    minHeight: 0,
-                    fontWeight: 500,
-                    fontSize: "0.9rem",
-                    transition: "color 0.2s ease",
-                    "&:hover": {
-                      color: "#DDAA4A",
-                      bgcolor: "transparent",
-                      transform: "translateX(4px)",
-                    },
-                  }}
+                  sx={linkButtonSx}
                 >
                   {link.text}
                 </Button>
@@ -140,7 +180,6 @@ export const Footer = () => {
             </Stack>
           </Grid>
 
-          {/* Legal & Support Column */}
           <Grid size={{ xs: 6, sm: 4, md: 2.5 }}>
             <Typography
               variant="subtitle2"
@@ -156,27 +195,15 @@ export const Footer = () => {
             </Typography>
             <Stack spacing={2} sx={{ alignItems: "flex-start" }}>
               {[
-                { text: "Privacy Policy", path: "#" },
-                { text: "Terms of Service", path: "#" },
-                { text: "Auditing & Compliance", path: "#" },
+                { text: "Privacy Policy", path: "/privacy-policy" },
+                { text: "Terms of Service", path: "/terms-of-service" },
+                { text: "Auditing & Compliance", path: "/auditing-compliance" },
                 { text: "Contact Support", path: "/#contact" },
               ].map((link) => (
                 <Button
                   key={link.text}
                   onClick={() => navigate(link.path)}
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.55)",
-                    p: 0,
-                    minHeight: 0,
-                    fontWeight: 500,
-                    fontSize: "0.9rem",
-                    transition: "color 0.2s ease",
-                    "&:hover": {
-                      color: "#DDAA4A",
-                      bgcolor: "transparent",
-                      transform: "translateX(4px)",
-                    },
-                  }}
+                  sx={linkButtonSx}
                 >
                   {link.text}
                 </Button>
@@ -184,7 +211,6 @@ export const Footer = () => {
             </Stack>
           </Grid>
 
-          {/* Newsletter Column */}
           <Grid size={{ xs: 12, sm: 4, md: 3 }}>
             <Typography
               variant="subtitle2"
@@ -196,7 +222,7 @@ export const Footer = () => {
                 mb: 3,
               }}
             >
-              Stay Updated
+              Alyah Social Platform
             </Typography>
             <Typography
               variant="body2"
@@ -207,62 +233,27 @@ export const Footer = () => {
                 fontSize: "0.9rem",
               }}
             >
-              Subscribe to get news about pharmaceuticals and platform updates.
+              Follow our parent company channels for product updates, software
+              work, and company news.
             </Typography>
-            {subscribed ? (
-              <Box
-                sx={{
-                  p: 1.5,
-                  borderRadius: 2,
-                  bgcolor: "rgba(15, 139, 108, 0.1)",
-                  border: "1px solid rgba(15, 139, 108, 0.2)",
-                  color: "#0F8B6C",
-                }}
-              >
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  ✓ Subscribed successfully!
-                </Typography>
-              </Box>
-            ) : (
-              <Box component="form" onSubmit={handleSubscribe}>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  type="email"
-                  required
-                  slotProps={{
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton type="submit" size="small" sx={{ color: "#DDAA4A" }}>
-                            <SendIcon fontSize="small" />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                      sx: {
-                        color: "white",
-                        bgcolor: "rgba(255, 255, 255, 0.04)",
-                        border: "1px solid rgba(255, 255, 255, 0.08)",
-                        "&:hover": {
-                          borderColor: "rgba(255, 255, 255, 0.15)",
-                        },
-                        "&.Mui-focused": {
-                          bgcolor: "rgba(255, 255, 255, 0.06)",
-                          borderColor: "#DDAA4A",
-                        },
-                      },
-                    },
-                  }}
+            <Stack spacing={1.25} sx={{ alignItems: "flex-start" }}>
+              {PARENT_SOCIAL_LINKS.map((link) => (
+                <Button
+                  key={link.text}
+                  component="a"
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={link.icon}
                   sx={{
-                    "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                    ...linkButtonSx,
+                    fontWeight: 600,
                   }}
-                />
-              </Box>
-            )}
+                >
+                  {link.text}
+                </Button>
+              ))}
+            </Stack>
           </Grid>
         </Grid>
 
@@ -279,10 +270,10 @@ export const Footer = () => {
           }}
         >
           <Typography variant="body2" sx={{ fontSize: "inherit" }}>
-            © {new Date().getFullYear()} Alyah Pharma Net. All rights reserved.
+            &copy; {new Date().getFullYear()} Alyah Pharma Net. All rights
+            reserved.
           </Typography>
 
-          {/* Compliance & Verification Badges */}
           <Stack
             direction="row"
             spacing={2}
@@ -296,13 +287,16 @@ export const Footer = () => {
             }}
           >
             <VerifiedIcon sx={{ color: "#DDAA4A", fontSize: "1.1rem" }} />
-            <Typography variant="caption" sx={{ fontWeight: 700, color: "rgba(255, 255, 255, 0.7)" }}>
-              ALCOA+ & FDA 21 CFR Part 11 Compliant
+            <Typography
+              variant="caption"
+              sx={{ fontWeight: 700, color: "rgba(255, 255, 255, 0.7)" }}
+            >
+              ALCOA+ audit-ready controls
             </Typography>
           </Stack>
 
           <Typography variant="body2" sx={{ fontSize: "inherit" }}>
-            Connecting Ethiopian Healthcare Professionals
+            Connecting Ethiopian healthcare professionals
           </Typography>
         </Stack>
       </Container>

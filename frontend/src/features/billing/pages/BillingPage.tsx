@@ -235,6 +235,8 @@ export const BillingPage = () => {
         />
       </Stack>
 
+      <Divider sx={{ mt: 3, mb: 3, borderColor: "rgba(15, 139, 108, 0.16)" }} />
+
       {error && (
         <Alert severity="error" sx={{ mt: 3 }}>
           {error}

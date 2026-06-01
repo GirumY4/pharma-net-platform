@@ -25,6 +25,7 @@ import { ProtectedRoute } from "../routes/ProtectedRoute";
 import { RoleRoute } from "../routes/RoleRoute";
 import { SubscriptionRoute } from "../routes/SubscriptionRoute";
 import { LandingPage } from "../features/landing-page";
+import { LegalPage } from "../features/legal/LegalPage";
 
 const CenteredPage = ({ children }: { children: ReactNode }) => (
   <Box
@@ -105,6 +106,12 @@ export const App = () => (
       element={<ConfirmReactivationPage />}
     />
     <Route path="/marketplace" element={<MarketplacePage />} />
+    <Route path="/privacy-policy" element={<LegalPage kind="privacy" />} />
+    <Route path="/terms-of-service" element={<LegalPage kind="terms" />} />
+    <Route
+      path="/auditing-compliance"
+      element={<LegalPage kind="compliance" />}
+    />
     <Route path="/unauthorized" element={<Unauthorized />} />
 
     <Route element={<ProtectedRoute />}>

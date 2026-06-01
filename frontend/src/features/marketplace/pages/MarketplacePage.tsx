@@ -9,6 +9,7 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Collapse,
   Container,
   Dialog,
   DialogActions,
@@ -37,9 +38,8 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  AccountCircle,
-  Close as CloseIcon,
-  FilterList,
+  ExpandLess,
+  ExpandMore,
   LocalShipping as ShippingIcon,
   Logout,
   MyLocation,
@@ -50,6 +50,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/useAuth";
 import SEO from "../../../components/SEO";
+import { API_BASE_URL } from "../../../services/api";
 import { Logo } from "../../../components/Logo";
 import { Footer } from "../../../components/layout/Footer";
 import { MarketplaceFloatingUtilities } from "../components/MarketplaceFloatingUtilities";
@@ -65,7 +66,10 @@ import type { IOrder, IOrderItem, OrderStatus } from "../../orders/types";
 
 // Profile imports
 import { ProfileForm, PasswordChangeForm, useUserProfile } from "../../users";
+import { AccountSettingsCard } from "../../users/components/AccountSettingsCard";
+import { ProfileHeader } from "../../users/components/ProfileHeader";
 import { ProfilePictureUpload } from "../../users/components/ProfilePictureUpload";
+import { deactivateAccount } from "../../users/services/usersApi";
 import { CATEGORIES } from "../types";
 
 const DEFAULT_FILTERS: MarketplaceFilters = {
@@ -98,7 +102,7 @@ interface MarketplaceCartItem {
 
 export const MarketplacePage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, role, logout } = useAuth();
+  const { isAuthenticated, user, role, logout, refreshUser } = useAuth();
 
   // Tab State: "listings" | "orders" | "profile"
   const [activeTab, setActiveTab] = useState<"listings" | "orders" | "profile">("listings");
@@ -136,6 +140,7 @@ export const MarketplacePage = () => {
     message: "",
     severity: "info",
   });
+  const [accountNotice, setAccountNotice] = useState<string | null>(null);
 
   const { results, loading, error, pagination, search, retry, loadMore } =
     useMarketplaceSearch(DEFAULT_FILTERS);
@@ -164,10 +169,19 @@ export const MarketplacePage = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (activeTab === "orders") {
+    if (activeTab === "orders" && ORDER_SYSTEM_ENABLED) {
       loadUserOrders();
     }
   }, [activeTab, loadUserOrders]);
+
+  const refreshAccountState = async () => {
+    await Promise.all([refreshProfile(), refreshUser()]);
+  };
+
+  const handleDeactivate = async () => {
+    const response = await deactivateAccount();
+    setAccountNotice(response.message);
+  };
 
   const handleLogout = () => {
     setUserMenuAnchor(null);
@@ -404,6 +418,8 @@ export const MarketplacePage = () => {
   const lineTotal = selectedMedicine
     ? selectedMedicine.unitPrice * Math.max(1, Math.floor(orderQuantity))
     : 0;
+  const ordersDisabledReason =
+    "Marketplace orders are frozen while the ordering workflow is being prepared.";
 
   // Sorting logic on client results
   const sortedResults = [...results].sort((a, b) => {
@@ -472,19 +488,21 @@ export const MarketplacePage = () => {
             </Button>
             {isAuthenticated && (
               <>
-                <Button
-                  onClick={() => setActiveTab("orders")}
-                  sx={{
-                    fontWeight: 700,
-                    color: activeTab === "orders" ? "primary.main" : "text.secondary",
-                    bgcolor: activeTab === "orders" ? "rgba(15, 139, 108, 0.08)" : "transparent",
-                    borderRadius: 2,
-                    px: 2.25,
-                    "&:hover": { bgcolor: "rgba(15, 139, 108, 0.06)" },
-                  }}
-                >
-                  My Orders
-                </Button>
+                <Tooltip title={ordersDisabledReason}>
+                  <span>
+                    <Button
+                      disabled
+                      startIcon={<ShippingIcon />}
+                      sx={{
+                        fontWeight: 700,
+                        borderRadius: 2,
+                        px: 2.25,
+                      }}
+                    >
+                      My Orders
+                    </Button>
+                  </span>
+                </Tooltip>
                 <Button
                   onClick={() => setActiveTab("profile")}
                   sx={{
@@ -537,6 +555,11 @@ export const MarketplacePage = () => {
                   }}
                 >
                   <Avatar
+                    src={
+                      user?.profilePictureUrl
+                        ? `${API_BASE_URL.replace(/\/api\/?$/, "")}${user.profilePictureUrl}`
+                        : undefined
+                    }
                     sx={{ bgcolor: "primary.main", width: 34, height: 34, fontWeight: 700 }}
                   >
                     {user?.name?.charAt(0).toUpperCase()}
@@ -590,19 +613,17 @@ export const MarketplacePage = () => {
             }}
             sx={{ py: 1.25 }}
           >
-            <AccountCircle fontSize="small" sx={{ mr: 1.5, color: "text.secondary" }} />
-            Profile Info
+            <SettingsIcon fontSize="small" sx={{ mr: 1.5, color: "text.secondary" }} />
+            Profile Settings
           </MenuItem>
-          <MenuItem
-            onClick={() => {
-              setUserMenuAnchor(null);
-              setActiveTab("orders");
-            }}
-            sx={{ py: 1.25 }}
-          >
-            <ShippingIcon fontSize="small" sx={{ mr: 1.5, color: "text.secondary" }} />
-            My Orders
-          </MenuItem>
+          <Tooltip title={ordersDisabledReason} placement="left">
+            <span>
+              <MenuItem disabled sx={{ py: 1.25 }}>
+                <ShippingIcon fontSize="small" sx={{ mr: 1.5, color: "text.secondary" }} />
+                My Orders
+              </MenuItem>
+            </span>
+          </Tooltip>
           {role !== "public_user" && (
             <MenuItem
               onClick={() => {
@@ -654,6 +675,11 @@ export const MarketplacePage = () => {
             </Box>
 
             <Container maxWidth="xl">
+              {isAuthenticated && role === "pharmacy_manager" && (
+                <Alert severity="info" sx={{ mb: 3, borderRadius: 2.5 }}>
+                  Pharmacy managers can browse marketplace availability to find medicines across partner pharmacies. Purchasing and order tracking remain frozen until the ordering workflow is released.
+                </Alert>
+              )}
               <Grid container spacing={4}>
                 {/* FILTER SIDEBAR (DESKTOP) */}
                 <Grid size={{ xs: 12, md: 3 }} sx={{ display: { xs: "none", md: "block" } }}>
@@ -775,16 +801,138 @@ export const MarketplacePage = () => {
 
                 {/* RESULTS GRID (RIGHT COLUMN) */}
                 <Grid size={{ xs: 12, md: 9 }}>
-                  <Box sx={{ mb: 3, display: { xs: "flex", md: "none" }, gap: 2 }}>
-                    {/* Mobile filter buttons */}
-                    <Button
-                      variant="outlined"
-                      startIcon={<FilterList />}
-                      onClick={() => setShowFiltersMobile(true)}
-                      fullWidth
+                  <Box sx={{ mb: 3, display: { xs: "block", md: "none" } }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        border: "1px solid rgba(23, 35, 31, 0.12)",
+                        bgcolor: "rgba(255, 255, 255, 0.82)",
+                        backdropFilter: "blur(16px)",
+                        borderRadius: 2.5,
+                        px: 1.25,
+                        py: 0.75,
+                      }}
                     >
-                      Filters
-                    </Button>
+                      <Search fontSize="small" sx={{ color: "text.secondary", flexShrink: 0 }} />
+                      <TextField
+                        fullWidth
+                        variant="standard"
+                        placeholder="Search medicine or pharmacy city"
+                        value={filters.name || ""}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        slotProps={{
+                          input: {
+                            disableUnderline: true,
+                            sx: { fontWeight: 650 },
+                          },
+                        }}
+                      />
+                      <Tooltip title={showFiltersMobile ? "Hide filters" : "Show filters"}>
+                        <IconButton
+                          size="small"
+                          onClick={() => setShowFiltersMobile((open) => !open)}
+                          aria-label={showFiltersMobile ? "Hide marketplace filters" : "Show marketplace filters"}
+                          sx={{
+                            border: "1px solid rgba(15, 139, 108, 0.18)",
+                            color: "primary.main",
+                            bgcolor: "rgba(15, 139, 108, 0.06)",
+                          }}
+                        >
+                          {showFiltersMobile ? <ExpandLess /> : <ExpandMore />}
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+
+                    <Collapse in={showFiltersMobile} timeout="auto" unmountOnExit>
+                      <Box
+                        sx={{
+                          mt: 1.25,
+                          p: 2.25,
+                          border: "1px solid rgba(23, 35, 31, 0.1)",
+                          borderTop: "3px solid rgba(15, 139, 108, 0.32)",
+                          bgcolor: "rgba(255, 255, 255, 0.9)",
+                          backdropFilter: "blur(18px)",
+                          borderRadius: 2.5,
+                        }}
+                      >
+                        <Stack spacing={2.5}>
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", mb: 1, display: "block" }}>
+                              Sort Results By
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                              <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                                <MenuItem value="price_asc">Price: Low to High</MenuItem>
+                                <MenuItem value="price_desc">Price: High to Low</MenuItem>
+                                <MenuItem value="stock_desc">Stock: High to Low</MenuItem>
+                                <MenuItem value="name_asc">Name: A to Z</MenuItem>
+                                <MenuItem value="distance_asc">Distance: Nearest First</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Box>
+
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", mb: 1, display: "block" }}>
+                              Your Location
+                            </Typography>
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              size="small"
+                              startIcon={<MyLocation />}
+                              onClick={() => {
+                                navigator.geolocation.getCurrentPosition(
+                                  (pos) => handleLocationUpdate(pos.coords.latitude, pos.coords.longitude),
+                                  () => setToast({ open: true, message: "Geolocation denied by browser.", severity: "error" })
+                                );
+                              }}
+                            >
+                              Find Medicines Near Me
+                            </Button>
+                          </Box>
+
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", mb: 1, display: "block" }}>
+                              Category
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                              <Select
+                                value={filters.category || ""}
+                                onChange={(e) => handleFilterChange({ category: e.target.value || undefined })}
+                              >
+                                <MenuItem value="">All Categories</MenuItem>
+                                {CATEGORIES.map((cat) => (
+                                  <MenuItem key={cat} value={cat}>
+                                    {cat}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Box>
+
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", mb: 1, display: "block" }}>
+                              City Selection
+                            </Typography>
+                            <TextField
+                              fullWidth
+                              size="small"
+                              placeholder="e.g. Addis Ababa"
+                              value={filters.city || ""}
+                              onChange={(e) => handleFilterChange({ city: e.target.value || undefined })}
+                            />
+                          </Box>
+
+                          <Divider />
+
+                          <Button fullWidth variant="text" size="small" onClick={handleResetFilters} sx={{ color: "text.secondary" }}>
+                            Clear All Filters
+                          </Button>
+                        </Stack>
+                      </Box>
+                    </Collapse>
                   </Box>
 
                   {/* Filter Status */}
@@ -841,7 +989,29 @@ export const MarketplacePage = () => {
               Track medicine reservations and order histories placed with local pharmacies.
             </Typography>
 
-            {ordersLoading && orders.length === 0 ? (
+            {!ORDER_SYSTEM_ENABLED ? (
+              <Box
+                sx={{
+                  py: 8,
+                  px: 3,
+                  textAlign: "center",
+                  border: "1px solid rgba(23, 35, 31, 0.08)",
+                  borderRadius: 3,
+                  bgcolor: "rgba(255, 255, 255, 0.78)",
+                }}
+              >
+                <ShippingIcon sx={{ fontSize: 42, color: "text.secondary", opacity: 0.45, mb: 1.5 }} />
+                <Typography variant="h6" sx={{ fontWeight: 800, color: "#17231F" }}>
+                  Orders are not available yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 520, mx: "auto" }}>
+                  Marketplace ordering and request tracking are frozen while the fulfillment workflow is being prepared.
+                </Typography>
+                <Button variant="contained" sx={{ mt: 3 }} onClick={() => setActiveTab("listings")}>
+                  Browse Marketplace
+                </Button>
+              </Box>
+            ) : ordersLoading && orders.length === 0 ? (
               <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
                 <CircularProgress />
               </Box>
@@ -1038,92 +1208,38 @@ export const MarketplacePage = () => {
               <Alert severity="error" sx={{ mb: 4, borderRadius: 2 }}>
                 {profileError}
               </Alert>
-            ) : (
-              <Grid container spacing={4}>
-                {/* Profile Edit forms */}
-                <Grid size={{ xs: 12, md: 8 }}>
-                  <Stack spacing={4}>
-                    <ProfileForm profile={profile} onSuccess={refreshProfile} />
-                    <PasswordChangeForm onSuccess={() => {}} />
-                  </Stack>
-                </Grid>
+            ) : profile ? (
+              <>
+                <ProfileHeader profile={profile} sx={{ mb: 4 }} />
+                <Grid container spacing={4}>
+                  <Grid size={{ xs: 12, md: 8 }}>
+                    <Stack spacing={4}>
+                      <ProfileForm profile={profile} onSuccess={refreshAccountState} />
+                      <PasswordChangeForm onSuccess={refreshAccountState} />
+                    </Stack>
+                  </Grid>
 
-                {/* Profile Photo sidebar */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <ProfilePictureUpload
-                    currentUser={profile}
-                    onUploadSuccess={refreshProfile}
-                    onRemoveSuccess={refreshProfile}
-                  />
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <Stack spacing={4}>
+                      <ProfilePictureUpload
+                        currentUser={profile}
+                        onUploadSuccess={refreshAccountState}
+                        onRemoveSuccess={refreshAccountState}
+                      />
+                      <AccountSettingsCard
+                        profile={profile}
+                        onDeactivate={handleDeactivate}
+                      />
+                    </Stack>
+                  </Grid>
                 </Grid>
-              </Grid>
+              </>
+            ) : (
+              <Alert severity="warning">Profile data not available.</Alert>
             )}
           </Container>
         )}
       </Box>
-
-      {/* MOBILE FILTERS POPUP */}
-      <Dialog
-        open={showFiltersMobile}
-        onClose={() => setShowFiltersMobile(false)}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          Filters
-          <IconButton onClick={() => setShowFiltersMobile(false)}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ pt: 1 }}>
-            <Box>
-              <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
-                Keywords
-              </Typography>
-              <TextField
-                fullWidth
-                size="small"
-                value={filters.name || ""}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
-            </Box>
-            <Box>
-              <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
-                Category
-              </Typography>
-              <FormControl fullWidth size="small">
-                <Select
-                  value={filters.category || ""}
-                  onChange={(e) => handleFilterChange({ category: e.target.value || undefined })}
-                >
-                  <MenuItem value="">All Categories</MenuItem>
-                  {CATEGORIES.map((cat) => (
-                    <MenuItem key={cat} value={cat}>
-                      {cat}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            <Box>
-              <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
-                City
-              </Typography>
-              <TextField
-                fullWidth
-                size="small"
-                value={filters.city || ""}
-                onChange={(e) => handleFilterChange({ city: e.target.value || undefined })}
-              />
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleResetFilters}>Reset</Button>
-          <Button variant="contained" onClick={() => setShowFiltersMobile(false)}>Apply</Button>
-        </DialogActions>
-      </Dialog>
 
       {/* MEDICINE DETAILS MODAL DIALOG */}
       <Dialog
@@ -1381,6 +1497,22 @@ export const MarketplacePage = () => {
           }}
         >
           {toast.message}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={!!accountNotice}
+        autoHideDuration={7000}
+        onClose={() => setAccountNotice(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setAccountNotice(null)}
+          sx={{ width: "100%" }}
+        >
+          {accountNotice}
         </Alert>
       </Snackbar>
 

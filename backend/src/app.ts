@@ -21,6 +21,7 @@ import paymentRoutes from "./modules/payments/payments.routes.js";
 import reportRoutes from "./modules/reports/reports.routes.js";
 import userRoutes from "./modules/users/users.routes.js";
 import notificationRoutes from "./modules/notifications/notifications.routes.js";
+import supportRoutes from "./modules/support/support.routes.js";
 
 const app: Express = express();
 
@@ -91,6 +92,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/logs", auditRoutes); // admin only
+app.use("/api/support", supportRoutes);
 
 // ─── Error handling ────────────────────────────────────────────────────
 app.use(notFoundHandler); // 404 handler

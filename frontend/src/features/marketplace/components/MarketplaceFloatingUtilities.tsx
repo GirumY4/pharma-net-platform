@@ -27,6 +27,7 @@ import {
   StepLabel,
   Stepper,
   TextField,
+  Tooltip,
   Typography,
   Zoom,
 } from "@mui/material";
@@ -392,6 +393,28 @@ export const MarketplaceFloatingUtilities = () => {
     return ORDER_STEPS.findIndex((s) => s.key === status);
   };
 
+  const floatingButtonSx = {
+    width: { xs: 50, sm: 54 },
+    height: { xs: 50, sm: 54 },
+    bgcolor: "rgba(255, 255, 255, 0.88)",
+    backdropFilter: "blur(16px)",
+    border: "1px solid rgba(15, 139, 108, 0.22)",
+    boxShadow: "0 14px 34px rgba(18, 32, 28, 0.14)",
+    color: "#0F8B6C",
+    transition: "transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+    "&:hover": {
+      bgcolor: "#FFFFFF",
+      transform: "translateY(-3px)",
+      boxShadow: "0 18px 42px rgba(15, 139, 108, 0.2)",
+    },
+    "&.Mui-disabled": {
+      bgcolor: "rgba(255, 255, 255, 0.72)",
+      borderColor: "rgba(23, 35, 31, 0.12)",
+      color: "rgba(23, 35, 31, 0.34)",
+      boxShadow: "0 10px 24px rgba(18, 32, 28, 0.08)",
+    },
+  };
+
   return (
     <>
       {/* Floating Action Buttons Hub */}
@@ -408,23 +431,26 @@ export const MarketplaceFloatingUtilities = () => {
           in={showFabs}
           style={{ transitionDelay: showFabs ? "100ms" : "0ms" }}
         >
-          <Fab
-            aria-label="tracker"
-            onClick={() => setTrackerOpen(true)}
-            disabled={!ORDER_SYSTEM_ENABLED}
-            sx={{
-              bgcolor: "rgba(255, 255, 255, 0.7)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid #0F8B6C",
-              boxShadow: "0 8px 32px rgba(15, 139, 108, 0.2)",
-              color: "#0F8B6C",
-              "&:hover": {
-                bgcolor: "rgba(255, 255, 255, 0.9)",
-              },
-            }}
+          <Tooltip
+            title={
+              ORDER_SYSTEM_ENABLED
+                ? "Track a marketplace order by ID"
+                : "Order tracking is frozen until marketplace ordering is released"
+            }
+            placement="left"
+            arrow
           >
-            <TrackerIcon />
-          </Fab>
+            <span>
+              <Fab
+                aria-label="Track marketplace order"
+                onClick={() => setTrackerOpen(true)}
+                disabled={!ORDER_SYSTEM_ENABLED}
+                sx={floatingButtonSx}
+              >
+                <TrackerIcon />
+              </Fab>
+            </span>
+          </Tooltip>
         </Zoom>
 
         {isAuthenticated && (
@@ -432,33 +458,24 @@ export const MarketplaceFloatingUtilities = () => {
             in={showFabs}
             style={{ transitionDelay: showFabs ? "150ms" : "0ms" }}
           >
-            <Fab
-              aria-label="notifications"
-              onClick={() => {
-                setNotificationsOpen(true);
-                loadNotifications();
-              }}
-              sx={{
-                bgcolor: "rgba(255, 255, 255, 0.75)",
-                backdropFilter: "blur(12px)",
-                border: "1px solid #3B82F6",
-                boxShadow: "0 8px 32px rgba(59, 130, 246, 0.25)",
-                color: "#3B82F6",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                "&:hover": {
-                  bgcolor: "rgba(255, 255, 255, 0.95)",
-                  transform: "translateY(-4px)",
-                },
-              }}
-            >
-              <Badge
-                badgeContent={unreadCount}
-                color="error"
-                sx={{ "& .MuiBadge-badge": { fontWeight: 700 } }}
+            <Tooltip title="Open marketplace notifications" placement="left" arrow>
+              <Fab
+                aria-label="Open marketplace notifications"
+                onClick={() => {
+                  setNotificationsOpen(true);
+                  loadNotifications();
+                }}
+                sx={floatingButtonSx}
               >
-                <NotificationsIcon />
-              </Badge>
-            </Fab>
+                <Badge
+                  badgeContent={unreadCount}
+                  color="error"
+                  sx={{ "& .MuiBadge-badge": { fontWeight: 700 } }}
+                >
+                  <NotificationsIcon />
+                </Badge>
+              </Fab>
+            </Tooltip>
           </Zoom>
         )}
 
@@ -466,31 +483,32 @@ export const MarketplaceFloatingUtilities = () => {
           in={showFabs}
           style={{ transitionDelay: showFabs ? "200ms" : "0ms" }}
         >
-          <Fab
-            aria-label="cart"
-            onClick={() => setCartOpen(true)}
-            disabled={!ORDER_SYSTEM_ENABLED}
-            sx={{
-              bgcolor: "rgba(255, 255, 255, 0.75)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid #DDAA4A",
-              boxShadow: "0 8px 32px rgba(221, 170, 74, 0.25)",
-              color: "#DDAA4A",
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              "&:hover": {
-                bgcolor: "rgba(255, 255, 255, 0.95)",
-                transform: "translateY(-4px)",
-              },
-            }}
+          <Tooltip
+            title={
+              ORDER_SYSTEM_ENABLED
+                ? "Open saved medicines cart"
+                : "Cart checkout is frozen until marketplace ordering is released"
+            }
+            placement="left"
+            arrow
           >
-            <Badge
-              badgeContent={totalItemsCount}
-              color="warning"
-              sx={{ "& .MuiBadge-badge": { fontWeight: 700 } }}
-            >
-              <CartIcon />
-            </Badge>
-          </Fab>
+            <span>
+              <Fab
+                aria-label="Open saved medicines cart"
+                onClick={() => setCartOpen(true)}
+                disabled={!ORDER_SYSTEM_ENABLED}
+                sx={floatingButtonSx}
+              >
+                <Badge
+                  badgeContent={totalItemsCount}
+                  color="warning"
+                  sx={{ "& .MuiBadge-badge": { fontWeight: 700 } }}
+                >
+                  <CartIcon />
+                </Badge>
+              </Fab>
+            </span>
+          </Tooltip>
         </Zoom>
       </Stack>
 

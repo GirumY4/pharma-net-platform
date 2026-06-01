@@ -1,8 +1,10 @@
 // src/features/landing-page/sections/ContactSection.tsx
 import { Apartment, Call, CheckCircleOutlined, Email } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   Container,
   Grid,
   Paper,
@@ -11,12 +13,15 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { handleApiError } from "../../../utils/errorMapper";
+import { sendContactMessage } from "../services/contactApi";
 
 const WHY_CHOOSE_US = [
-  "Trusted by 500+ pharmacies across Ethiopia",
-  "Real-time inventory with 99.9% uptime",
-  "Compliant with EFDA regulations",
-  "Dedicated support team",
+  "Tenant-isolated inventory and pharmacy operations",
+  "Batch, expiry, and FEFO-aware stock tracking",
+  "Immutable audit logs for accountable system activity",
+  "Marketplace discovery without exposing sensitive pharmacy data",
 ];
 
 interface ContactSectionProps {
@@ -28,6 +33,40 @@ export const ContactSection = ({
   title = "Get in Touch",
   subtitle = "Have questions? We're here to help you succeed.",
 }: ContactSectionProps) => {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const handleChange =
+    (field: keyof typeof form) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      setForm((prev) => ({ ...prev, [field]: event.target.value }));
+    };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setNotice(null);
+
+    try {
+      const message = await sendContactMessage(form);
+      setNotice({ type: "success", message });
+      setForm({ name: "", email: "", phone: "", message: "" });
+    } catch (error) {
+      setNotice({ type: "error", message: handleApiError(error) });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Box
       id="contact"
@@ -78,11 +117,20 @@ export const ContactSection = ({
               >
                 Send us a Message
               </Typography>
-              <Stack spacing={3}>
+              <Stack component="form" spacing={3} onSubmit={handleSubmit}>
+                {notice && (
+                  <Alert severity={notice.type} onClose={() => setNotice(null)}>
+                    {notice.message}
+                  </Alert>
+                )}
                 <TextField
                   fullWidth
                   label="Full Name"
                   variant="outlined"
+                  value={form.name}
+                  onChange={handleChange("name")}
+                  required
+                  disabled={submitting}
                   slotProps={{
                     htmlInput: { autoComplete: "name" },
                   }}
@@ -97,6 +145,10 @@ export const ContactSection = ({
                   label="Email Address"
                   type="email"
                   variant="outlined"
+                  value={form.email}
+                  onChange={handleChange("email")}
+                  required
+                  disabled={submitting}
                   slotProps={{
                     htmlInput: { autoComplete: "email" },
                   }}
@@ -111,6 +163,9 @@ export const ContactSection = ({
                   label="Phone Number"
                   type="tel"
                   variant="outlined"
+                  value={form.phone}
+                  onChange={handleChange("phone")}
+                  disabled={submitting}
                   slotProps={{
                     htmlInput: { autoComplete: "tel" },
                   }}
@@ -126,6 +181,10 @@ export const ContactSection = ({
                   multiline
                   rows={5}
                   variant="outlined"
+                  value={form.message}
+                  onChange={handleChange("message")}
+                  required
+                  disabled={submitting}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
@@ -135,6 +194,9 @@ export const ContactSection = ({
                 <Button
                   variant="contained"
                   fullWidth
+                  type="submit"
+                  disabled={submitting}
+                  startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : null}
                   sx={{
                     bgcolor: "#0F5E4D",
                     color: "#FFFFFF",
@@ -146,7 +208,7 @@ export const ContactSection = ({
                     },
                   }}
                 >
-                  Send Message
+                  {submitting ? "Sending..." : "Send Message"}
                 </Button>
               </Stack>
             </Paper>
@@ -192,9 +254,8 @@ export const ContactSection = ({
                     Office Location
                   </Typography>
                   <Typography variant="body1" color="text.secondary">
-                    Bole Subcity, Woreda 03
-                    <br />
-                    Addis Ababa, Ethiopia
+                    Besides Bahir Dar Institute of Technology (Poly Campus),
+                    Kebele 10, Bahir Dar, Ethiopia
                   </Typography>
                 </Box>
               </Paper>
@@ -235,8 +296,14 @@ export const ContactSection = ({
                   >
                     Phone
                   </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    +251 11 666 8899
+                  <Typography
+                    component="a"
+                    href="tel:+251928775577"
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ textDecoration: "none", "&:hover": { color: "#0F5E4D" } }}
+                  >
+                    +251-92-877-5577
                     <br />
                     <Typography
                       component="span"
@@ -285,8 +352,14 @@ export const ContactSection = ({
                   >
                     Support Email
                   </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    support@alyapharmanet.com
+                  <Typography
+                    component="a"
+                    href="mailto:groomyas8@gmail.com"
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ textDecoration: "none", "&:hover": { color: "#0F5E4D" } }}
+                  >
+                    groomyas8@gmail.com
                     <br />
                     <Typography
                       component="span"

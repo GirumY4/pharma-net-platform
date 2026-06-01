@@ -225,6 +225,8 @@ export const InventoryPage = () => {
         </Tooltip>
       </Box>
 
+      <Divider sx={{ mb: 3, borderColor: "rgba(15, 139, 108, 0.16)" }} />
+
       {/* ────────── Search, Filters & Add ────────── */}
       <Box
         sx={{
