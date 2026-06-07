@@ -22,16 +22,11 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Grid,
   IconButton,
   InputAdornment,
   MenuItem,
-  Stack,
   TextField,
   Typography,
 } from "@mui/material";
@@ -45,6 +40,7 @@ import {
 import { handleApiError } from "../../../utils/errorMapper";
 import { registerUser } from "../services/authApi";
 import SEO from "../../../components/SEO";
+import { MapPickerDialog } from "../../../components/maps/MapPickerDialog";
 
 const redirectDelay = 5;
 
@@ -84,206 +80,6 @@ const registerBrand = {
   ],
   footer:
     "Built to keep account setup clear, accurate, and ready for compliant pharmacy workflows.",
-};
-
-const loadGoogleMapsScript = (callback: () => void) => {
-  if ((window as any).google && (window as any).google.maps) {
-    callback();
-    return;
-  }
-  const existingScript = document.getElementById("google-maps-script");
-  if (existingScript) {
-    existingScript.addEventListener("load", callback);
-    return;
-  }
-  const script = document.createElement("script");
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""
-  }&libraries=places`;
-  script.id = "google-maps-script";
-  script.async = true;
-  script.defer = true;
-  script.onload = () => callback();
-  document.body.appendChild(script);
-};
-
-interface MapPickerDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onSelectLocation: (lat: number, lng: number) => void;
-  initialLat?: number;
-  initialLng?: number;
-}
-
-const MapPickerDialog = ({
-  open,
-  onClose,
-  onSelectLocation,
-  initialLat,
-  initialLng,
-}: MapPickerDialogProps) => {
-  const [map, setMap] = useState<any>(null);
-  const [marker, setMarker] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(
-    initialLat && initialLng ? { lat: initialLat, lng: initialLng } : null
-  );
-
-  useEffect(() => {
-    if (!open) return;
-
-    loadGoogleMapsScript(() => {
-      const defaultCenter = { lat: 9.03, lng: 38.74 }; // Addis Ababa default
-      const center = initialLat && initialLng ? { lat: initialLat, lng: initialLng } : defaultCenter;
-
-      const mapContainer = document.getElementById("google-map-picker");
-      if (!mapContainer) return;
-
-      const newMap = new (window as any).google.maps.Map(mapContainer, {
-        center,
-        zoom: 13,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-      });
-
-      const newMarker = new (window as any).google.maps.Marker({
-        position: initialLat && initialLng ? center : null,
-        map: newMap,
-        draggable: true,
-      });
-
-      setMap(newMap);
-      setMarker(newMarker);
-
-      newMap.addListener("click", (e: any) => {
-        const clickedLat = e.latLng.lat();
-        const clickedLng = e.latLng.lng();
-        newMarker.setPosition(e.latLng);
-        setSelectedCoords({ lat: clickedLat, lng: clickedLng });
-      });
-
-      newMarker.addListener("dragend", (e: any) => {
-        const draggedLat = e.latLng.lat();
-        const draggedLng = e.latLng.lng();
-        setSelectedCoords({ lat: draggedLat, lng: draggedLng });
-      });
-    });
-  }, [open, initialLat, initialLng]);
-
-  const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
-      setLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLat = position.coords.latitude;
-          const userLng = position.coords.longitude;
-          setSelectedCoords({ lat: userLat, lng: userLng });
-
-          if (map && marker) {
-            const pos = { lat: userLat, lng: userLng };
-            map.setCenter(pos);
-            map.setZoom(16);
-            marker.setPosition(pos);
-          }
-          setLoading(false);
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          setLoading(false);
-          alert("Could not get your current location. Please select it manually on the map.");
-        }
-      );
-    } else {
-      alert("Geolocation is not supported by your browser.");
-    }
-  };
-
-  const handleSearch = () => {
-    if (!searchQuery.trim() || !map) return;
-    const geocoder = new (window as any).google.maps.Geocoder();
-    geocoder.geocode({ address: searchQuery }, (results: any, status: string) => {
-      if (status === "OK" && results[0]) {
-        const loc = results[0].geometry.location;
-        map.setCenter(loc);
-        map.setZoom(15);
-        marker.setPosition(loc);
-        setSelectedCoords({ lat: loc.lat(), lng: loc.lng() });
-      } else {
-        alert("Geocode was not successful: " + status);
-      }
-    });
-  };
-
-  const handleConfirm = () => {
-    if (selectedCoords) {
-      onSelectLocation(selectedCoords.lat, selectedCoords.lng);
-      onClose();
-    } else {
-      alert("Please select a location on the map first.");
-    }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 800, color: "#0F5E4D" }}>
-        Locate on Google Maps
-      </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={2}>
-          <Typography variant="body2" color="text.secondary">
-            Search for your address or click on the map to place a pin. Drag the pin to adjust your position.
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <TextField
-              size="small"
-              fullWidth
-              placeholder="Search city, neighborhood, or building..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            />
-            <Button variant="contained" onClick={handleSearch} sx={{ bgcolor: "#0F5E4D" }}>
-              Search
-            </Button>
-          </Stack>
-          <Box
-            id="google-map-picker"
-            sx={{
-              width: "100%",
-              height: 350,
-              borderRadius: 2,
-              border: "1px solid rgba(23,35,31,0.12)",
-              bgcolor: "#eee",
-            }}
-          />
-          <Button
-            variant="outlined"
-            onClick={handleUseCurrentLocation}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={16} /> : undefined}
-            sx={{ borderColor: "#0F5E4D", color: "#0F5E4D" }}
-          >
-            {loading ? "Locating..." : "Use Current Location"}
-          </Button>
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ p: 2.5 }}>
-        <Button onClick={onClose} color="inherit" sx={{ fontWeight: 700 }}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          variant="contained"
-          disabled={!selectedCoords}
-          sx={{ bgcolor: "#0F5E4D", fontWeight: 700 }}
-        >
-          Confirm Location
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
 };
 
 export const RegisterPage = () => {
